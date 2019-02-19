@@ -5,11 +5,11 @@ import sys
 import os
 import pygame as pg
 import numpy as np   
+import display as disp
+import labyrinthe as lab
+import player
 
-class Display:
-	def __init__(self):
-		return
-	
+
 	
 ## colors
 BLACK = [0,0,0]
