@@ -19,10 +19,6 @@ class CRoom():
 		return 'ROOM %s - %s'%(str(self.pos), str(t))
 		return str(t)
 
-	def setDist(self, dist):
-		self.distCentre = dist
-		return
-
 	def link(self, target, room):
 		if  target[0]-self.pos[0] == 1:
 			self.doors[0] = room
@@ -83,18 +79,20 @@ class CLaby():
 			y.append(keylist[i][1])
 		x = [min(x), max(x)]
 		y = [min(y), max(y)]
-		#print(x, y)
-
-		for j in range(y[0], y[1]):
-			for i in range(x[0], x[1]):
+		
+		map = CDistance(self).spread((0,0))
+		
+		for j in range(y[0], y[1]+1):
+			for i in range(x[0], x[1]+1):
 				if (i,j) in keylist:
-					if (i,j) == (0,0):
-						print("O", end='')
-					else:
-						print("+", end='')
+					print("·{0:2d}·".format(map[i,j]), end='')
 				else:
-					print(" ", end='')
+					print("····", end='')
 			print("")
+			for i in range(x[0], x[1]+1):
+				print("····", end='')
+			print("")
+		print("\n")
 		return
 
 
@@ -107,33 +105,39 @@ class CDistance():
 	def listNextRooms(self, pos):
 		out = []
 		for room in self.laby.laby[pos].doors:
-			if room != 0 and room.pos not in list(self.dist.keys()):
-				out.append(room)
+			if room != 0:
+				out.append(room.pos)
 		return out
 
-	def distance(self, curr_pos, dest_pos):
+	def spread(self, curr_pos):
 		depth = 0
-		liste = [curr_pos]
-		self.dist = {curr_pos: depth}
-		prev_pos = curr_pos			
-		for pos in liste:
-			print("1 :", pos)
-			for pos2 in self.listNextRooms(curr_pos):
-				print("	 2 :", pos)
-				if pos2.pos not in list(self.dist.keys()):
-					self.dist[pos2] = depth
-					liste.extend(pos2.pos)
-						
-		return self.dist
+		frontiere = [curr_pos]
+		map = {curr_pos : depth}
+		modif = 1
+		while frontiere != []:
+			pos = frontiere[0]
+			for posNextRoom in self.listNextRooms(pos):
+				if posNextRoom not in list(map.keys()):
+					map[posNextRoom] = map[pos]+1
+					frontiere.append(posNextRoom)
+			frontiere.pop(0)
+		if map.keys() == self.laby.laby.keys():
+			return map
+		else:
+			return 1
+			
+	def shortestDistTo(self, curPos, targetPos):
+		return
+		
 
 if __name__ == '__main__':
 	
 	laby = CLaby()
-	laby.initRandom(53)
-	laby.gen(30)
+	laby.initRandom(13)
+	laby.gen(50)
 	laby.printLaby()
 	
 	dist = CDistance(laby)
-	print(dist.distance((-1,0), (0,0)))
+
 
 
