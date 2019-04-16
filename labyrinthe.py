@@ -1,16 +1,22 @@
 import random
 
+def getKey(val, dict):
+	out = []
+	for key, value in dict.items(): 
+		if val == value:
+			out.append(key)
+	return out 
+
 
 class CRoom():
 	def __init__(self, pos):
-		self.pos = pos
+		self.pos = pos # room coordinates
 		self.doors = [0, 0, 0, 0] # East, North, West, South (odre trigo)
-		self.texture = "A"
-		self.distCentre = 0
-		
+		self.texture = "A" # not used (yet ?)
+		self.isEnd = 0 # is this room the end of the level
 		return
 
-	def __str__(self):
+	def __str__(self): # nice display in case of a print(object)
 		t = []
 		for e in self.doors:
 			if e == 0:
@@ -20,7 +26,7 @@ class CRoom():
 		return 'ROOM %s - %s'%(str(self.pos), str(t))
 		return str(t)
 
-	def link(self, target, room):
+	def link(self, target, room): # create a one way-link with another room
 		if  target[0]-self.pos[0] == 1:
 			self.doors[0] = room
 		elif target[1]-self.pos[1] == 1:
@@ -35,7 +41,7 @@ class CRoom():
 	def outDoors(self):
 		return self.doors
 
-	def outTexture(self):
+	def outTexture(self): # not used
 		return self.texture
 
 class CLaby():
@@ -48,16 +54,20 @@ class CLaby():
 		else:
 			random.seed()
 
-	def gen(self, n=9):
-		for rooms, (i,j) in self.stepGen(n):
+	def gen(self, n=9): # generating the labyrinth
+		for rooms, (i,j) in self.stepGen(n): # calling stepGen as many times as necessary
 			pass
+		self.map = CDistance(self).spread((0,0)) # get the distance between any tile and the starting position
+		possiblePos = getKey(max(self.map.values()), self.map) # list all max distance rooms
+		room = self.laby[possiblePos[random.randint(0, len(possiblePos)-1)]] #pick a random room at a max distance from the inital position
+		room.isEnd = 1 # set the end of the game
+		return self.laby
 
 	def stepGen(self, n=9):
 		room = CRoom((0,0)) # pos = (x, y)
-		self.laby = {(0,0) : room}
+		self.laby = {(0,0) : room} #init starting room
 		a, b = 0, 0
-		#for _ in range(n):
-		while len(self.laby) < n:
+		while len(self.laby) < n: # while there is less than n rooms
 			A, B = a, b
 			if random.randint(0, 1):
 				a += random.choice((-1, 1))
@@ -68,7 +78,7 @@ class CLaby():
 			self.laby[a, b].link((A, B), self.laby[A, B])
 			self.laby[A, B].link((a, b), self.laby[a, b])
 
-			yield self.laby, (a,b)
+			yield self.laby, (a,b) # yield a intermediary position to enable following the generation process
 
 	def out(self):
 		return self.laby
@@ -82,12 +92,13 @@ class CLaby():
 		x = [min(x), max(x)]
 		y = [min(y), max(y)]
 		
-		map = CDistance(self).spread((0,0))
-		
 		for j in range(y[0], y[1]+1):
 			for i in range(x[0], x[1]+1):
 				if (i,j) in keylist:
-					print("·{0:2d}·".format(map[i,j]), end='')
+					if self.laby[(i,j)].isEnd:
+						print("XX", end='')
+					else:
+						print("·{0:2d}·".format(self.map[i,j]), end='')
 				else:
 					print("····", end='')
 			print("")
@@ -138,6 +149,12 @@ if __name__ == '__main__':
 	laby.initRandom()
 	laby.gen(30)
 	laby.printLaby()
+	for room in laby.laby.values():
+		if room.isEnd == 1:
+			endFound = 1
+	if endFound != 1:
+		print("error multiple/no end(s)")
+
 	
 	dist = CDistance(laby)
 
