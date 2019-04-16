@@ -7,6 +7,7 @@ class CRoom():
 		self.doors = [0, 0, 0, 0] # East, North, West, South (odre trigo)
 		self.texture = "A"
 		self.distCentre = 0
+		
 		return
 
 	def __str__(self):
@@ -55,7 +56,8 @@ class CLaby():
 		room = CRoom((0,0)) # pos = (x, y)
 		self.laby = {(0,0) : room}
 		a, b = 0, 0
-		for _ in range(n):
+		#for _ in range(n):
+		while len(self.laby) < n:
 			A, B = a, b
 			if random.randint(0, 1):
 				a += random.choice((-1, 1))
@@ -133,8 +135,8 @@ class CDistance():
 if __name__ == '__main__':
 	
 	laby = CLaby()
-	laby.initRandom(13)
-	laby.gen(50)
+	laby.initRandom()
+	laby.gen(30)
 	laby.printLaby()
 	
 	dist = CDistance(laby)
