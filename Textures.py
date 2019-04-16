@@ -4,6 +4,7 @@ import sys
 import os
 os.chdir('R:\Projet isn')
 import numpy as np
+import labyrinthe
 
 ### COLOR
 BLACK=[0,0,0]
@@ -31,38 +32,89 @@ pg.display.set_caption("Lab")
 background = pg.image.load('back.png').convert()
 
 
+### LABYRINTHE
+laby = labyrinthe.CLaby()
+
+laby.gen(30)
+
+laby.printLaby()
+
+print(laby.laby[0,0].doors)
+screen.blit(background, (0,0))
 
 
+### BOUSSOLE
+
+compass = pg.image.load('compass.png')
+def boussole(dir) :
+    screen.blit(pg.transform.rotate(compass, 90*(dir%4)), (0,0))
+    return
+
+boussole(0)
 
 ### TEXTURES 
 
-k_ini = 0       #coordonnée en k initiale
-i_ini = 0       #coordonnée en i initiale
-j_ini=0         #coordonnée en j initiale
-skin = "A"
+dir = 0
+x=0
+y=0
+coor=[x,y] 
 
-
-
-def keypressed(x, y, z) :
-    print ("a")
-    background = pg.image.load('back.png').convert()
-    screen.blit(background, (0, 0))
-    i=x
-    for j in range((y+3)%4, y-1, -1):
-        k = 1
-        name = "tunnel"
-        screen.blit(pg.image.load('img/%s_%s%0+4d%+04d_%+04d.png'%(name, skin, i, j, k)), (0,0))
-        name = "dalle"
-        screen.blit(pg.image.load('img/%s_%s%0+4d%+04d_%+04d.png'%(name, skin, i, j, k)), (0,0))
-        name = "mur"
-        k = 0
-        screen.blit(pg.image.load('img/%s_%s%0+4d%+04d_%+04d.png'%(name, skin, i, j, k)), (0,0))
-        k = 2
-        screen.blit(pg.image.load('img/%s_%s%0+4d%+04d_%+04d.png'%(name, skin, i, j, k)), (0,0))
+def render (type, skin, posx, posy, orientation) :
+    screen.blit(pg.image.load('img/A/%s_%s%0+4d%+04d_%+04d.png'%(type, skin, posx, posy, orientation)), (0,0))
+    
+    
     return
 
+def cardinaux (coord) :
+    if laby.laby[coord[0],coord[1]].doors[0] == 0 :
+        East = 0
+    else :
+        East = 1
+    if laby.laby[coord[0],coord[1]].doors[1] == 0 :
+        North = 0
+    else :
+        North = 1
+    if laby.laby[coord[0],coord[1]].doors[2] == 0 :
+        West = 0
+    else :
+        West = 1
+    if laby.laby[coord[0],coord[1]].doors[3] == 0 :
+        South = 0
+    else :
+        South = 1
+    return [East, North, West, South]
 
-keypressed(i_ini, j_ini, k_ini)
+
+
+def construction (East, North, West, South, direction) :
+    screen.blit(background, (0,0))
+    render ("floor", "stones", 0, 0, (dir)%4)
+    if South == 1 :
+        render ("Arch", "stones", 0, 0, (-dir+3)%4)
+    else :
+        render ("wall", "stones", 0, 0, (-dir+3)%4)
+    if North == 1 :
+        render ("Arch", "stones", 0, 0, (-dir+1)%4)
+    else :
+        render ("wall", "stones", 0, 0, (-dir+1)%4)
+    if East == 1 :
+        render ("Arch", "stones", 0, 0, (-dir)%4)
+    else :
+        render ("wall", "stones", 0, 0, (-dir)%4)
+    if West == 1 :
+        render ("Arch", "stones", 0, 0, (-dir+2)%4)
+    else :
+        render ("wall", "stones", 0, 0, (-dir+2)%4)
+    boussole(dir)
+    print(cardinaux(coor))
+    print(dir%4)
+    print(coor)
+    return
+    
+construction(cardinaux(coor)[0], cardinaux(coor)[1], cardinaux(coor)[2], cardinaux(coor)[3], dir)
+
+
+
 
 ### BOUCLE INFINIE
 while 1:
@@ -70,28 +122,36 @@ while 1:
         if event.type==pg.QUIT:
             pg.quit()
         elif event.type == pg.KEYDOWN:
-            if event.key == 273:
-                print(event.key)
-                j_ini=j_ini-1
-                print (j_ini)
-                keypressed(i_ini, j_ini, k_ini) 
-            elif event.key == 274:
-                print(event.key)
-            elif event.key == 275:
-                print(event.key)
-            elif event.key == 276:
-                print(event.key)
-            else:
-                print(event.key) 
+            if event.key == 273: #haut
+                if dir%4 == 0 and cardinaux(coor)[1] == 1 :
+                    coor[1]+=1
+                    construction (cardinaux(coor)[0], cardinaux(coor)[1], cardinaux(coor)[2], cardinaux(coor)[3], dir)
+                elif dir%4 == 1 and cardinaux(coor)[2] == 1 :
+                    coor[0]-=1
+                    construction (cardinaux(coor)[0], cardinaux(coor)[1], cardinaux(coor)[2], cardinaux(coor)[3], dir)
+                elif dir%4 == 2 and cardinaux(coor)[3] == 1 :
+                    coor[1]-=1
+                    construction (cardinaux(coor)[0], cardinaux(coor)[1], cardinaux(coor)[2], cardinaux(coor)[3], dir)
+                elif dir%4 == 3 and cardinaux(coor)[0] == 1 :
+                    coor[0]+=1
+                    construction (cardinaux(coor)[0], cardinaux(coor)[1], cardinaux(coor)[2], cardinaux(coor)[3], dir)
+            elif event.key == 274: #bas
+                pass
+            elif event.key == 275: #droite
+                dir-=1
+                construction (cardinaux(coor)[0], cardinaux(coor)[1], cardinaux(coor)[2], cardinaux(coor)[3], dir)
+            elif event.key == 276: #gauche
+                dir+=1
+                construction (cardinaux(coor)[0], cardinaux(coor)[1], cardinaux(coor)[2], cardinaux(coor)[3], dir)
+        else :
+            pass
                     
-            pg.display.flip()    
+        pg.display.flip()    
 pg.quit()
 
 
 
 '''
-            
-
 
 ### CLOCK
 clock = pg.time.Clock()
