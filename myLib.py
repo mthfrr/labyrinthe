@@ -1,0 +1,12 @@
+def dirToXY(direction):
+    return [(1,0),(0,1),(-1,0),(0,-1)][direction]
+
+def XYToDir(a, b):
+    return [(1,0),(0,1),(-1,0),(0,-1)].index((a, b))
+
+def getKey(val, dict):
+    out = []
+    for key, value in dict.items():
+        if val == value:
+            out.append(key)
+    return out
