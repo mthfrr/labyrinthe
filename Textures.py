@@ -2,9 +2,8 @@ import pygame as pg
 
 import sys
 import os
-os.chdir('R:\Projet isn')
-import numpy as np
-import labyrinthe
+os.chdir('D:\Projet_isn')
+import labyrinthe4 as labyrinthe
 
 ### COLOR
 BLACK=[0,0,0]
@@ -12,13 +11,9 @@ WHITE=[255,255,255]
 RED=[255,0,0]
 GREEN=[0,255,0]
 slate_gray=[112,138,144]
-dark_slate_blue=[72,61,139]    
-
+dark_slate_blue=[72,61,139]
 
 pg.init()
-
-
-
 
 ### SCREEN
 Largeur=800
@@ -35,7 +30,9 @@ background = pg.image.load('back.png').convert()
 ### LABYRINTHE
 laby = labyrinthe.CLaby()
 
-laby.gen(30)
+laby.initRandom(8)
+
+laby.gen(150)
 
 laby.printLaby()
 
@@ -47,74 +44,113 @@ screen.blit(background, (0,0))
 
 compass = pg.image.load('compass.png')
 def boussole(dir) :
-    screen.blit(pg.transform.rotate(compass, 90*(dir%4)), (0,0))
+    screen.blit(pg.transform.rotate(compass, 90*(-dir%4)), (0,0))
     return
 
 boussole(0)
 
-### TEXTURES 
+### TEXTURES
 
 dir = 0
 x=0
 y=0
-coor=[x,y] 
+coor=[x,y]
 
-def render (type, skin, posx, posy, orientation) :
-    screen.blit(pg.image.load('img/A/%s_%s%0+4d%+04d_%+04d.png'%(type, skin, posx, posy, orientation)), (0,0))
-    
-    
-    return
+class CImage():
+    def __init__(self, type, skin, posx, posy, orientation):
+        self.type = type
+        self.skin = skin
+        self.posx = posx
+        self.posy = posy
+        self.orientation = orientation
+        self.dist = abs(posx*10)+abs(posy)+0.1
+        if orientation == 0:
+            self.dist += 0.1
+        if orientation == 2:
+            self.dist -= 0.1
+        if type == "floor":
+            self.dist += 0.2
 
-def cardinaux (coord) :
-    if laby.laby[coord[0],coord[1]].doors[0] == 0 :
-        East = 0
-    else :
-        East = 1
-    if laby.laby[coord[0],coord[1]].doors[1] == 0 :
-        North = 0
-    else :
-        North = 1
-    if laby.laby[coord[0],coord[1]].doors[2] == 0 :
-        West = 0
-    else :
-        West = 1
-    if laby.laby[coord[0],coord[1]].doors[3] == 0 :
-        South = 0
-    else :
-        South = 1
-    return [East, North, West, South]
+    def render(self):
+        drawImage(self.type, self.skin, self.posx, self.posy, self.orientation)
+        #pg.display.flip()
+        #pg.time.delay(500)
 
+loaded = {}
 
+def drawImage (type, skin, posx, posy, orientation):
+    name = 'img/A/%s_%s%0+4d%+04d_%+04d.png'%(type, skin, posx, posy, orientation)
+    if name in loaded:
+        img=loaded[name]
+    else:
+        img = pg.image.load(name)
+        print (name)
+        loaded[name] = img
+    screen.blit(img, (0,0))
 
-def construction (East, North, West, South, direction) :
+images = set()
+
+def construction (aRoom, direction, i, j, images):
+    #print(isDoors)
+    isDoors = aRoom.doors
     screen.blit(background, (0,0))
-    render ("floor", "stones", 0, 0, (dir)%4)
-    if South == 1 :
-        render ("Arch", "stones", 0, 0, (-dir+3)%4)
-    else :
-        render ("wall", "stones", 0, 0, (-dir+3)%4)
-    if North == 1 :
-        render ("Arch", "stones", 0, 0, (-dir+1)%4)
-    else :
-        render ("wall", "stones", 0, 0, (-dir+1)%4)
-    if East == 1 :
-        render ("Arch", "stones", 0, 0, (-dir)%4)
-    else :
-        render ("wall", "stones", 0, 0, (-dir)%4)
-    if West == 1 :
-        render ("Arch", "stones", 0, 0, (-dir+2)%4)
-    else :
-        render ("wall", "stones", 0, 0, (-dir+2)%4)
+    im = CImage ("floor", "stones", i, j, (direction)%4)
+    images.add(im)
+    for d in range (4):
+        if isDoors[d] == 0 :
+            im = CImage ("wall", "stones", i, j, (d-direction)%4)
+        else:
+            im = CImage ("tunnel", "stones", i, j, (d-direction)%4)
+        images.add(im)
+
+construction(laby.laby[x,y], dir,0 ,0, images)
+
+images = sorted(images, key=lambda x: x.dist, reverse=True)
+for im in  images:
+    im.render()
+
+boussole(dir)
+
+
+def voisins(aRoom, userDir, i, j, images, disti, distj):
+    if disti >= 3:
+        return
+    if distj > disti+1:
+        return
+    r = aRoom.doors[userDir%4]
+    if r != 0:
+        construction (r, dir%4, i+1, j, images)
+        voisins(r, userDir, i+1, j, images, disti+1, distj)
+    r = aRoom.doors[(userDir+1)%4]
+    if r != 0:
+        construction (r, dir%4, i, j+1, images)
+        voisins(r, userDir, i, j+1, images, disti, distj+1)
+    r = aRoom.doors[(userDir+3)%4]
+    if r != 0:
+        construction (r, dir%4, i, j-1, images)
+        voisins(r, userDir, i, j-1, images, disti, distj+1)
+
+
+
+
+def affichage(userRoom, userDir) :
+    images = set()
+    construction (userRoom, userDir, 0, 0, images)
+    voisins(userRoom, userDir, 0, 0, images, 0, 0)
+    images = sorted(images, key=lambda x: x.dist, reverse=True)
+    for im in images :
+        im.render()
     boussole(dir)
-    print(cardinaux(coor))
-    print(dir%4)
-    print(coor)
-    return
-    
-construction(cardinaux(coor)[0], cardinaux(coor)[1], cardinaux(coor)[2], cardinaux(coor)[3], dir)
+    pg.display.flip()
 
 
+VECT = [(1,0),(0,1),(-1,0),(0,-1)]
 
+affichage(laby.laby[x,y], dir)
+
+
+pg.display.flip()
+#exit()
 
 ### BOUCLE INFINIE
 while 1:
@@ -123,49 +159,21 @@ while 1:
             pg.quit()
         elif event.type == pg.KEYDOWN:
             if event.key == 273: #haut
-                if dir%4 == 0 and cardinaux(coor)[1] == 1 :
-                    coor[1]+=1
-                    construction (cardinaux(coor)[0], cardinaux(coor)[1], cardinaux(coor)[2], cardinaux(coor)[3], dir)
-                elif dir%4 == 1 and cardinaux(coor)[2] == 1 :
-                    coor[0]-=1
-                    construction (cardinaux(coor)[0], cardinaux(coor)[1], cardinaux(coor)[2], cardinaux(coor)[3], dir)
-                elif dir%4 == 2 and cardinaux(coor)[3] == 1 :
-                    coor[1]-=1
-                    construction (cardinaux(coor)[0], cardinaux(coor)[1], cardinaux(coor)[2], cardinaux(coor)[3], dir)
-                elif dir%4 == 3 and cardinaux(coor)[0] == 1 :
-                    coor[0]+=1
-                    construction (cardinaux(coor)[0], cardinaux(coor)[1], cardinaux(coor)[2], cardinaux(coor)[3], dir)
+                if laby.laby[x,y].doors[dir%4] != 0:
+                    dx, dy = VECT[dir%4]
+                    x += dx
+                    y += dy
             elif event.key == 274: #bas
-                pass
+                if laby.laby[x,y].doors[(dir+2)%4] != 0:
+                    dx, dy = VECT[dir%4]
+                    x -= dx
+                    y -= dy
             elif event.key == 275: #droite
                 dir-=1
-                construction (cardinaux(coor)[0], cardinaux(coor)[1], cardinaux(coor)[2], cardinaux(coor)[3], dir)
             elif event.key == 276: #gauche
                 dir+=1
-                construction (cardinaux(coor)[0], cardinaux(coor)[1], cardinaux(coor)[2], cardinaux(coor)[3], dir)
-        else :
-            pass
-                    
-        pg.display.flip()    
+            elif event.key == 27:
+                pg.quit()
+            affichage(laby.laby[x,y], dir)
+
 pg.quit()
-
-
-
-'''
-
-### CLOCK
-clock = pg.time.Clock()
-
-crashed = False
-
-while not crashed:
-
-    for event in pg.event.get():
-        if event.type == pg.QUIT:
-            crashed = True
-
-        print(event)
-
-    pg.display.update()
-    clock.tick(60)
-'''
