@@ -2,8 +2,8 @@ import pygame as pg
 
 import sys
 import os
-os.chdir('D:\Projet_isn')
-import labyrinthe4 as labyrinthe
+#os.chdir('D:\Projet_isn')
+import labyrinthe as labyrinthe
 
 ### COLOR
 BLACK=[0,0,0]
@@ -42,7 +42,7 @@ screen.blit(background, (0,0))
 
 ### BOUSSOLE
 
-compass = pg.image.load('compass.png')
+compass = pg.image.load('img/compass.png')
 def boussole(dir) :
     screen.blit(pg.transform.rotate(compass, 90*(-dir%4)), (0,0))
     return
