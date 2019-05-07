@@ -2,8 +2,8 @@ import pygame as pg
 
 import sys
 import os
-#os.chdir('D:\Projet_isn')
-import labyrinthe as labyrinthe
+os.chdir('R:\Projet isn')
+import labyrinthe4 as labyrinthe
 
 ### COLOR
 BLACK=[0,0,0]
@@ -42,7 +42,7 @@ screen.blit(background, (0,0))
 
 ### BOUSSOLE
 
-compass = pg.image.load('img/compass.png')
+compass = pg.image.load('img\compass.png')
 def boussole(dir) :
     screen.blit(pg.transform.rotate(compass, 90*(-dir%4)), (0,0))
     return
@@ -55,6 +55,10 @@ dir = 0
 x=0
 y=0
 coor=[x,y]
+                
+welcome = pg.image.load('img\welcomeScreen.png')
+screen.blit(welcome, (0,0))                
+pg.display.flip()
 
 class CImage():
     def __init__(self, type, skin, posx, posy, orientation):
@@ -70,40 +74,78 @@ class CImage():
             self.dist -= 0.1
         if type == "floor":
             self.dist += 0.2
-
+        self.image = pg.image.load('img/A/%s_%s%0+4d%+04d_%+04d.png'%(self.type, self.skin, self.posx, self.posy, self.orientation))
+        
+            
     def render(self):
-        drawImage(self.type, self.skin, self.posx, self.posy, self.orientation)
+        screen.blit(self.image, (0,0))
+        #drawImage(self.type, self.skin, self.posx, self.posy, self.orientation)
         #pg.display.flip()
         #pg.time.delay(500)
-
-loaded = {}
-
-def drawImage (type, skin, posx, posy, orientation):
-    name = 'img/A/%s_%s%0+4d%+04d_%+04d.png'%(type, skin, posx, posy, orientation)
-    if name in loaded:
-        img=loaded[name]
-    else:
-        img = pg.image.load(name)
-        print (name)
-        loaded[name] = img
-    screen.blit(img, (0,0))
-
+    
+    
 images = set()
 
-def construction (aRoom, direction, i, j, images):
+
+
+def load():
+    loaded = {}
+    for i in range (4):
+        for j in range (-10, 10):
+            for k in range (4):
+                try :
+                    loaded['floor', 'stones', i, j, k] = CImage('floor', 'stones', i, j, k%4)
+                except pg.error:
+                    pass
+    for i in range (4):
+        for j in range (-10, 10):
+            for k in range (4):
+                try :
+                    loaded['wall', 'stones', i, j, k] = CImage('wall', 'stones', i, j, k%4)
+                except pg.error:
+                    pass
+    for i in range (4):
+        for j in range (-10, 10):
+            for k in range (4):
+                try :
+                    loaded['tunnel', 'stones', i, j, k] = CImage('tunnel', 'stones', i, j, k%4)
+                except pg.error:
+                    pass
+    return loaded
+  
+
+loaded = load()
+#print(loaded)
+    
+
+
+
+#def drawImage (type, skin, posx, posy, orientation):
+#    name = 'img/A/%s_%s%0+4d%+04d_%+04d.png'%(type, skin, posx, posy, orientation)
+#    if name in loaded:
+#        img=loaded[name]
+#    else:
+#        img = pg.image.load(name)
+#        print (name)
+#        loaded[name] = img
+#    screen.blit(img, (0,0))
+
+
+
+def construction (aRoom, direction, i, j, images, loaded):
     #print(isDoors)
     isDoors = aRoom.doors
     screen.blit(background, (0,0))
-    im = CImage ("floor", "stones", i, j, (direction)%4)
+    im = loaded["floor", "stones", i, j, (direction)%4]
     images.add(im)
     for d in range (4):
         if isDoors[d] == 0 :
-            im = CImage ("wall", "stones", i, j, (d-direction)%4)
+            im = loaded["wall", "stones", i, j, (d-direction)%4]
         else:
-            im = CImage ("tunnel", "stones", i, j, (d-direction)%4)
+            im = loaded["tunnel", "stones", i, j, (d-direction)%4]
         images.add(im)
 
-construction(laby.laby[x,y], dir,0 ,0, images)
+construction(laby.laby[x,y], dir,0 ,0, images, loaded)
 
 images = sorted(images, key=lambda x: x.dist, reverse=True)
 for im in  images:
@@ -119,15 +161,15 @@ def voisins(aRoom, userDir, i, j, images, disti, distj):
         return
     r = aRoom.doors[userDir%4]
     if r != 0:
-        construction (r, dir%4, i+1, j, images)
+        construction (r, dir%4, i+1, j, images, loaded)
         voisins(r, userDir, i+1, j, images, disti+1, distj)
     r = aRoom.doors[(userDir+1)%4]
     if r != 0:
-        construction (r, dir%4, i, j+1, images)
+        construction (r, dir%4, i, j+1, images, loaded)
         voisins(r, userDir, i, j+1, images, disti, distj+1)
     r = aRoom.doors[(userDir+3)%4]
     if r != 0:
-        construction (r, dir%4, i, j-1, images)
+        construction (r, dir%4, i, j-1, images, loaded)
         voisins(r, userDir, i, j-1, images, disti, distj+1)
 
 
@@ -135,7 +177,7 @@ def voisins(aRoom, userDir, i, j, images, disti, distj):
 
 def affichage(userRoom, userDir) :
     images = set()
-    construction (userRoom, userDir, 0, 0, images)
+    construction (userRoom, userDir, 0, 0, images, loaded)
     voisins(userRoom, userDir, 0, 0, images, 0, 0)
     images = sorted(images, key=lambda x: x.dist, reverse=True)
     for im in images :
