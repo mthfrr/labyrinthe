@@ -3,7 +3,7 @@ import pygame as pg
 import sys
 import os
 os.chdir('R:\Projet isn')
-import labyrinthe4 as labyrinthe
+import labyrinthe5 as labyrinthe
 
 ### COLOR
 BLACK=[0,0,0]
@@ -32,7 +32,7 @@ laby = labyrinthe.CLaby()
 
 laby.initRandom(8)
 
-laby.gen(150)
+laby.gen(30)
 
 laby.printLaby()
 
@@ -56,8 +56,10 @@ x=0
 y=0
 coor=[x,y]
                 
-welcome = pg.image.load('img\welcomeScreen.png')
-screen.blit(welcome, (0,0))                
+welcome1 = pg.image.load('img\welcomeScreen_1.png')
+welcome2 = pg.image.load('img\welcomeScreen_2.png')
+welcome3 = pg.image.load('img\welcomeScreen_3.png')
+screen.blit(welcome1, (0,0))                
 pg.display.flip()
 
 class CImage():
@@ -97,6 +99,8 @@ def load():
                     loaded['floor', 'stones', i, j, k] = CImage('floor', 'stones', i, j, k%4)
                 except pg.error:
                     pass
+            screen.blit(welcome1, (0,0))
+            pg.display.flip() 
     for i in range (4):
         for j in range (-10, 10):
             for k in range (4):
@@ -104,6 +108,8 @@ def load():
                     loaded['wall', 'stones', i, j, k] = CImage('wall', 'stones', i, j, k%4)
                 except pg.error:
                     pass
+            screen.blit(welcome2, (0,0))
+            pg.display.flip() 
     for i in range (4):
         for j in range (-10, 10):
             for k in range (4):
@@ -111,6 +117,8 @@ def load():
                     loaded['tunnel', 'stones', i, j, k] = CImage('tunnel', 'stones', i, j, k%4)
                 except pg.error:
                     pass
+            screen.blit(welcome3, (0,0))
+            pg.display.flip() 
     return loaded
   
 
@@ -214,8 +222,16 @@ while 1:
                 dir-=1
             elif event.key == 276: #gauche
                 dir+=1
-            elif event.key == 27:
+            elif event.key == 27: #échap
                 pg.quit()
+            print(x,y)
             affichage(laby.laby[x,y], dir)
+            if laby.laby[x,y].isEnd:
+                pg.time.delay(500)
+                screen.blit(background, (0,0))
+                pg.display.flip()
+                pg.time.delay(2000)
+                pg.quit()
+                
 
 pg.quit()
