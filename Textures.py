@@ -2,7 +2,9 @@ import pygame as pg
 
 import sys
 import os
-os.chdir('R:\Projet isn')
+path = os.path.dirname(os.path.abspath(__file__))
+os.chdir(path)
+
 import labyrinthe5 as labyrinthe
 
 ### COLOR
@@ -42,7 +44,7 @@ screen.blit(background, (0,0))
 
 ### BOUSSOLE
 
-compass = pg.image.load('img\compass.png')
+compass = pg.image.load('img/compass.png')
 def boussole(dir) :
     screen.blit(pg.transform.rotate(compass, 90*(-dir%4)), (0,0))
     return
@@ -55,17 +57,18 @@ dir = 0
 x=0
 y=0
 coor=[x,y]
-                
+
 welcome1 = pg.image.load('img\welcomeScreen_1.png')
 welcome2 = pg.image.load('img\welcomeScreen_2.png')
 welcome3 = pg.image.load('img\welcomeScreen_3.png')
-screen.blit(welcome1, (0,0))                
+screen.blit(welcome1, (0,0))
 pg.display.flip()
 
+class ImageNotFoundError(Exception): pass
+
 class CImage():
-    def __init__(self, type, skin, posx, posy, orientation):
+    def __init__(self, type, posx, posy, orientation):
         self.type = type
-        self.skin = skin
         self.posx = posx
         self.posy = posy
         self.orientation = orientation
@@ -74,69 +77,50 @@ class CImage():
             self.dist += 0.1
         if orientation == 2:
             self.dist -= 0.1
-        if type == "floor":
-            self.dist += 0.2
-        self.image = pg.image.load('img/A/%s_%s%0+4d%+04d_%+04d.png'%(self.type, self.skin, self.posx, self.posy, self.orientation))
-        
-            
+        if type in ("floor","pavement"):
+            self.dist += 1000
+
+
+        try:
+            self.image = pg.image.load('img/tiles/%s%0+2d%+02d_%d.png'%(self.type, self.posx, self.posy, self.orientation))
+        except pg.error:
+            if os.path.isfile('img/tiles/%s%0+2d%+02d_%d.empty'%(self.type, self.posx, self.posy, self.orientation)):
+                self.image = None
+            else:
+                raise ImageNotFoundError
+
     def render(self):
-        screen.blit(self.image, (0,0))
-        #drawImage(self.type, self.skin, self.posx, self.posy, self.orientation)
+        if self.image:
+            screen.blit(self.image, (0,0))
         #pg.display.flip()
         #pg.time.delay(500)
-    
-    
+
+
 images = set()
 
 
 
 def load():
     loaded = {}
-    for i in range (4):
-        for j in range (-10, 10):
-            for k in range (4):
-                try :
-                    loaded['floor', 'stones', i, j, k] = CImage('floor', 'stones', i, j, k%4)
-                except pg.error:
-                    pass
-            screen.blit(welcome1, (0,0))
-            pg.display.flip() 
-    for i in range (4):
-        for j in range (-10, 10):
-            for k in range (4):
-                try :
-                    loaded['wall', 'stones', i, j, k] = CImage('wall', 'stones', i, j, k%4)
-                except pg.error:
-                    pass
-            screen.blit(welcome2, (0,0))
-            pg.display.flip() 
-    for i in range (4):
-        for j in range (-10, 10):
-            for k in range (4):
-                try :
-                    loaded['tunnel', 'stones', i, j, k] = CImage('tunnel', 'stones', i, j, k%4)
-                except pg.error:
-                    pass
-            screen.blit(welcome3, (0,0))
-            pg.display.flip() 
+    for step, obj in enumerate(['floor', 'pavement', 'wall', 'tunnel']):
+        for i in range (4):
+            for j in range (-10, 10):
+                for k in range (4):
+                    try:
+                        loaded[obj, i, j, k] = CImage(obj, i, j, k%4)
+                    except ImageNotFoundError:
+                        #print ('skipping %s %d %d %d'%(obj, i,j,k))
+                        pass
+
+        screen.blit(pg.image.load('img\welcomeScreen_%d.png'%(step+1)), (0,0))
+        pg.display.flip()
     return loaded
-  
+
 
 loaded = load()
 #print(loaded)
-    
 
 
-
-#def drawImage (type, skin, posx, posy, orientation):
-#    name = 'img/A/%s_%s%0+4d%+04d_%+04d.png'%(type, skin, posx, posy, orientation)
-#    if name in loaded:
-#        img=loaded[name]
-#    else:
-#        img = pg.image.load(name)
-#        print (name)
-#        loaded[name] = img
-#    screen.blit(img, (0,0))
 
 
 
@@ -144,13 +128,16 @@ def construction (aRoom, direction, i, j, images, loaded):
     #print(isDoors)
     isDoors = aRoom.doors
     screen.blit(background, (0,0))
-    im = loaded["floor", "stones", i, j, (direction)%4]
+    if aRoom.BigRoomId == 0:
+        im = loaded["floor", i, j, (direction)%4]
+    else:
+        im = loaded["pavement", i, j, (direction)%4]
     images.add(im)
     for d in range (4):
         if isDoors[d] == 0 :
-            im = loaded["wall", "stones", i, j, (d-direction)%4]
+            im = loaded["wall", i, j, (d-direction)%4]
         else:
-            im = loaded["tunnel", "stones", i, j, (d-direction)%4]
+            im = loaded["tunnel", i, j, (d-direction)%4]
         images.add(im)
 
 construction(laby.laby[x,y], dir,0 ,0, images, loaded)
@@ -232,6 +219,6 @@ while 1:
                 pg.display.flip()
                 pg.time.delay(2000)
                 pg.quit()
-                
+
 
 pg.quit()
