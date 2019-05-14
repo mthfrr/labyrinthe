@@ -10,3 +10,12 @@ def getKey(val, dict):
         if val == value:
             out.append(key)
     return out
+
+def absDirToRel(actDir, absDir):
+    while actDir%4 != 1:
+        actDir = (actDir-1)%4
+        absDir = (absDir-1)%4
+    return absDir
+
+if __name__ == '__main__':
+    print(absDirToRel(0, 3))
