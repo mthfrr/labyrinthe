@@ -1,11 +1,12 @@
 import pygame as pg
-
 import sys
 import os
-path = os.path.dirname(os.path.abspath(__file__))
+#path = os.path.dirname(os.path.abspath(__file__))
+path = 'K:\profil\Bureau\labyrinthe-master'
 os.chdir(path)
 
 import labyrinthe5 as labyrinthe
+import myLib
 
 ### COLOR
 BLACK=[0,0,0]
@@ -28,13 +29,14 @@ pg.display.set_caption("Lab")
 
 background = pg.image.load('back.png').convert()
 
+end = pg.image.load('img/endScreen.png')
 
 ### LABYRINTHE
 laby = labyrinthe.CLaby()
 
 laby.initRandom(8)
 
-laby.gen(30)
+laby.gen(100)
 
 laby.printLaby()
 
@@ -50,6 +52,21 @@ def boussole(dir) :
     return
 
 boussole(0)
+
+
+
+
+### INDICE
+
+indice = 0
+arrow = pg.image.load('img/direction.png')
+def fleche(plCoor, plDir) :
+    hintDir = myLib.absDirToRel(dir, laby.dirToEnd(coor))
+    screen.blit(pg.transform.rotate(arrow, 90*((hintDir-1)%4)), (720,0))
+
+
+
+
 
 ### TEXTURES
 
@@ -195,29 +212,40 @@ while 1:
         if event.type==pg.QUIT:
             pg.quit()
         elif event.type == pg.KEYDOWN:
+            print (event.key)
             if event.key == 273: #haut
                 if laby.laby[x,y].doors[dir%4] != 0:
                     dx, dy = VECT[dir%4]
                     x += dx
                     y += dy
+                indice = 0
             elif event.key == 274: #bas
                 if laby.laby[x,y].doors[(dir+2)%4] != 0:
                     dx, dy = VECT[dir%4]
                     x -= dx
                     y -= dy
+                indice = 0
             elif event.key == 275: #droite
                 dir-=1
+                indice = 0
             elif event.key == 276: #gauche
                 dir+=1
+                indice = 0
             elif event.key == 27: #échap
                 pg.quit()
+            elif event.key == 104: #h
+                indice = 1
             print(x,y)
+            print(indice)
             affichage(laby.laby[x,y], dir)
+            if indice == 1 :
+                fleche(coor, dir)
+                pg.display.flip()
             if laby.laby[x,y].isEnd:
                 pg.time.delay(500)
-                screen.blit(background, (0,0))
+                screen.blit(end, (0,0))
                 pg.display.flip()
-                pg.time.delay(2000)
+                pg.time.delay(5000)
                 pg.quit()
 
 
