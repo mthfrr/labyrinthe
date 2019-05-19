@@ -5,7 +5,7 @@ import os
 from PIL import Image, ImageDraw, ImageFont
 
 
-import labyrinthe3 as labyrinthe
+import labyrinthe  # as labyrinthe
 import random
 
 
@@ -26,6 +26,7 @@ class CMapper():
                 self.tiles[s+'_d'] = img
             except FileNotFoundError:
                 img = None
+        self.arrow = Image.open(path+'arrow.png')
 
     def saveMissingPngs(self, path='./img_map/'):  ## à tester...
         for k,img in self.tiles.items():
@@ -96,7 +97,6 @@ class CMapper():
         msg = 'GO'
         x,y = dx*(i-xMin), dy*(yMax-j-1)
         w, h = drawObj.textsize(msg, font=self.fnt2)
-        #drawObj.text((x+dx/2-w/2,y+dy/2-h/2), msg, font=fnt2, fill=(255, 0, 0))
         drawObj.text((x+dx/2-w/2,y+dy/2-h/2), msg, font=self.fnt2, fill=(255, 0, 0))
 
         self.image = image
@@ -108,7 +108,15 @@ class CMapper():
         x,y = dx*(i-self.xMin), dy*(self.yMax-j-1)
 
         w, h = self.drawObj.textsize(msg, font=self.fnt2)
-        self.drawObj.text((x+dx/2-w/2,y+dy/2-h/2), msg, font=self.fnt2, fill=(255, 0, 0))
+        self.drawObj.text((x+dx/2-w/2,y+dy/2-h/2), msg, font=self.fnt2, fill=(0, 255, 0))
+
+    def drawInRoom(self, direction, coord):
+        i,j = coord
+        dx, dy = self.tiles['oooo'].size
+        x,y = dx*(i-self.xMin), dy*(self.yMax-j-1)
+
+        im = self.arrow.rotate( 90*direction, expand=1 )
+        self.image.paste(im, (x, y), im)
 
 
     def saveMap(self, mapName = 'the_map.png'):
@@ -118,18 +126,12 @@ class CMapper():
 
 
 if __name__ == '__main__':
-    N = 150
-    seed = random.randint(1,256)
+    N = 100
+    #seed = random.randint(1,256)
+    seed = 8
 
     laby = labyrinthe.CLaby()
-    laby.initRandom(seed)
-    laby.gen(N)
-    laby.printLaby()
-
-
     mapper = CMapper()
-    mapper.drawMap(laby.laby)
-    mapper.saveMap()
 
     filelist = [ f for f in os.listdir("mapsOut") if f.endswith(".png") ]
     for f in filelist:
@@ -138,7 +140,33 @@ if __name__ == '__main__':
     laby.initRandom(seed)
     for no, (rooms, (i,j)) in enumerate(laby.stepGen(N)):
         mapper.drawMap(rooms)
-        mapper.writeInRoom( 'ICI', (i,j) )
+        #mapper.writeInRoom( 'ICI', (i,j) )
         mapper.saveMap('mapsOut/the_map_%03d.png'%(no))
 
+    laby.initRandom(seed)
+    laby.gen(N)
+    #laby.printLaby()
+
+
+    mapper.drawMap(laby.laby)
+    mapper.writeInRoom( 'START', (0,0) )
+    mapper.writeInRoom( 'END', laby.end )
+    mapper.saveMap('the_map.png')
+
+    aMap = laby.spread(laby.end)
+    for k,v in aMap.items():
+        mapper.writeInRoom( '%d'%(v), k )
+
+    mapper.saveMap('the_map_with_distance.png')
+
+    mapper.drawMap(laby.laby)
+    for aRoom in laby.laby.values():
+        mapper.drawInRoom(laby.dirToEnd(aRoom.pos), aRoom.pos)
+        mapper.writeInRoom( '%d'%(laby.dirToEnd(aRoom.pos)), aRoom.pos )
+    mapper.writeInRoom( 'START', (0,0) )
+    mapper.writeInRoom( 'END', laby.end )
+
+    mapper.saveMap('the_map_with_hint.png')
+
+    # laby.dirToEnd(coord)
 

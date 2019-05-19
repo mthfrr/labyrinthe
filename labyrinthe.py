@@ -117,12 +117,11 @@ class CLaby():
         endPos = self.end
         aMap = self.spread(endPos)
         direction = [] # distance to end for each direction (E, N, W, S)
-        for i in range(4):
-            da, db = dirToXY(i)
-            print("")
-            a, b = int(pos[0])+int(da), int(pos[1])+int(db)
-            if (a, b) in aMap:
-                direction.append(aMap[a,b])
+        for room in self.laby[tuple(pos)].doors:
+            if room:
+                direction.append(aMap[room.pos])
+            else:
+                direction.append(1e300)
         return direction.index(min(direction))
 
     def gen(self, n=9): # generating the labyrinth

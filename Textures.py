@@ -1,11 +1,11 @@
 import pygame as pg
 import sys
 import os
-#path = os.path.dirname(os.path.abspath(__file__))
-path = 'K:\profil\Bureau\labyrinthe-master'
+path = os.path.dirname(os.path.abspath(__file__))
+#path = 'K:\profil\Bureau\labyrinthe-master'
 os.chdir(path)
 
-import labyrinthe5 as labyrinthe
+import labyrinthe # as labyrinthe
 import myLib
 
 ### COLOR
@@ -58,10 +58,12 @@ boussole(0)
 
 ### INDICE
 
-indice = 0
+indice = False
 arrow = pg.image.load('img/direction.png')
 def fleche(plCoor, plDir) :
-    hintDir = myLib.absDirToRel(dir, laby.dirToEnd(coor))
+    print ('abs pos:', plCoor)
+    print ('abs dir:', laby.dirToEnd(plCoor))
+    hintDir = myLib.absDirToRel(dir, laby.dirToEnd(plCoor))
     screen.blit(pg.transform.rotate(arrow, 90*((hintDir-1)%4)), (720,0))
 
 
@@ -76,8 +78,6 @@ y=0
 coor=[x,y]
 
 welcome1 = pg.image.load('img\welcomeScreen_1.png')
-welcome2 = pg.image.load('img\welcomeScreen_2.png')
-welcome3 = pg.image.load('img\welcomeScreen_3.png')
 screen.blit(welcome1, (0,0))
 pg.display.flip()
 
@@ -93,6 +93,8 @@ class CImage():
         if orientation == 0:
             self.dist += 0.1
         if orientation == 2:
+            self.dist -= 0.1
+        if type=='chest':
             self.dist -= 0.1
         if type in ("floor","pavement"):
             self.dist += 1000
@@ -119,7 +121,7 @@ images = set()
 
 def load():
     loaded = {}
-    for step, obj in enumerate(['floor', 'pavement', 'wall', 'tunnel']):
+    for step, obj in enumerate(['floor', 'pavement', 'wall', 'tunnel', 'chest']):
         for i in range (4):
             for j in range (-10, 10):
                 for k in range (4):
@@ -150,10 +152,13 @@ def construction (aRoom, direction, i, j, images, loaded):
     else:
         im = loaded["pavement", i, j, (direction)%4]
     images.add(im)
+    if aRoom.isEnd:
+        images.add(loaded["chest", i, j, (direction)%4])
     for d in range (4):
         if isDoors[d] == 0 :
             im = loaded["wall", i, j, (d-direction)%4]
         else:
+            #if not(aRoom.BigRoomId and isDoors[d].BigRoomId):
             im = loaded["tunnel", i, j, (d-direction)%4]
         images.add(im)
 
@@ -207,46 +212,46 @@ pg.display.flip()
 #exit()
 
 ### BOUCLE INFINIE
-while 1:
+jeuEnCours = True
+while jeuEnCours:
     for event in pg.event.get() :
         if event.type==pg.QUIT:
             pg.quit()
         elif event.type == pg.KEYDOWN:
-            print (event.key)
+            indice = False
             if event.key == 273: #haut
                 if laby.laby[x,y].doors[dir%4] != 0:
                     dx, dy = VECT[dir%4]
                     x += dx
                     y += dy
-                indice = 0
             elif event.key == 274: #bas
                 if laby.laby[x,y].doors[(dir+2)%4] != 0:
                     dx, dy = VECT[dir%4]
                     x -= dx
                     y -= dy
-                indice = 0
             elif event.key == 275: #droite
                 dir-=1
-                indice = 0
             elif event.key == 276: #gauche
                 dir+=1
-                indice = 0
             elif event.key == 27: #échap
                 pg.quit()
             elif event.key == 104: #h
-                indice = 1
+                indice = True
+            else:
+                print (event.key) ## afficher la touche que si elle n'est pas traitée avant
             print(x,y)
-            print(indice)
+            #print(indice)
             affichage(laby.laby[x,y], dir)
-            if indice == 1 :
-                fleche(coor, dir)
+            if indice:
+                fleche((x,y), dir)
                 pg.display.flip()
             if laby.laby[x,y].isEnd:
                 pg.time.delay(500)
                 screen.blit(end, (0,0))
                 pg.display.flip()
                 pg.time.delay(5000)
-                pg.quit()
+                jeuEnCours = False
+                break
 
 
 pg.quit()
