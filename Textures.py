@@ -1,8 +1,8 @@
 import pygame as pg
 import sys
 import os
-path = os.path.dirname(os.path.abspath(__file__))
-#path = 'K:\profil\Bureau\labyrinthe-master'
+#path = os.path.dirname(os.path.abspath(__file__))
+path = 'K:\profil\Bureau\labyrinthe-master2\labyrinthe-master'
 os.chdir(path)
 
 import labyrinthe # as labyrinthe
@@ -34,9 +34,9 @@ end = pg.image.load('img/endScreen.png')
 ### LABYRINTHE
 laby = labyrinthe.CLaby()
 
-laby.initRandom(8)
+laby.initRandom(11)
 
-laby.gen(100)
+laby.gen(200)
 
 laby.printLaby()
 
@@ -56,18 +56,24 @@ boussole(0)
 
 
 
-### INDICE
+### INDICES
 
 indice = False
 arrow = pg.image.load('img/direction.png')
 def fleche(plCoor, plDir) :
-    print ('abs pos:', plCoor)
-    print ('abs dir:', laby.dirToEnd(plCoor))
+    #print ('abs pos:', plCoor)
+    #print ('abs dir:', laby.dirToEnd(plCoor))
     hintDir = myLib.absDirToRel(dir, laby.dirToEnd(plCoor))
+    print("hdir:", hintDir)
     screen.blit(pg.transform.rotate(arrow, 90*((hintDir-1)%4)), (720,0))
 
 
 
+###MUSIC
+
+bgm = 'background.mp3'
+pg.mixer.init()
+pg.mixer.music.load(bgm)
 
 
 ### TEXTURES
@@ -133,6 +139,8 @@ def load():
 
         screen.blit(pg.image.load('img\welcomeScreen_%d.png'%(step+1)), (0,0))
         pg.display.flip()
+    #pg.mixer.music.play()
+    #print(1)
     return loaded
 
 
@@ -239,6 +247,33 @@ while jeuEnCours:
                 break
             elif event.key == 104: #h
                 indice = True
+                print("dir:", dir%4)
+            elif event.key == 114: #r
+                for loop in range (1000) :
+                    autoDir = myLib.absDirToRel(dir, laby.dirToEnd((x,y)))
+                    if  autoDir == 1 :
+                        dx, dy = VECT[dir%4]
+                        x += dx
+                        y += dy
+                    elif autoDir == 2 :
+                        dir+=1
+                    elif autoDir == 0 :
+                        dir-=1
+                    elif autoDir == 3 :
+                        dx, dy = VECT[dir%4]
+                        x -= dx
+                        y -= dy
+                    print("dir:", dir%4)
+                    affichage(laby.laby[x,y], dir)
+                    pg.display.flip()
+                    pg.time.delay(500)
+                    if laby.laby[x,y].isEnd:
+                        pg.time.delay(500)
+                        screen.blit(end, (0,0))
+                        pg.display.flip()
+                        pg.time.delay(5000)
+                        jeuEnCours = False
+                        break
             else:
                 print (event.key) ## afficher la touche que si elle n'est pas traitée avant
             print(x,y)
