@@ -139,7 +139,7 @@ def load():
 
         screen.blit(pg.image.load('img\welcomeScreen_%d.png'%(step+1)), (0,0))
         pg.display.flip()
-    #pg.mixer.music.play()
+    pg.mixer.music.play()
     #print(1)
     return loaded
 
