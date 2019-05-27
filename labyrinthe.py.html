@@ -1,0 +1,328 @@
+<html>
+<head>
+<title>D:\User\Mathieu\isn_git\labyrinthe.py.html</title>
+<meta name="Generator" content="Vim/7.0">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body bgcolor="#ffffff" text="#000000">
+<pre>
+<font color="#0000ff"># vim:set encoding=utf-8</font>
+
+<font color="#a020f0">import</font> random
+<font color="#a020f0">import</font> math
+<font color="#a020f0">from</font> myLib <font color="#a020f0">import</font> *
+
+<font color="#804040"><b>class</b></font> <font color="#008080">CRoom</font>():
+    <font color="#804040"><b>def</b></font> <font color="#008080">__init__</font>(self, pos):
+        self.pos = pos <font color="#0000ff"># room coordinates</font>
+        self.doors = [<font color="#ff00ff">0</font>, <font color="#ff00ff">0</font>, <font color="#ff00ff">0</font>, <font color="#ff00ff">0</font>] <font color="#0000ff"># East, North, West, South (odre trigo)</font>
+        self.texture = [<font color="#ff00ff">0</font>, <font color="#ff00ff">0</font>, <font color="#ff00ff">0</font>, <font color="#ff00ff">0</font>] <font color="#0000ff"># 0 : couloir-couloir, 1 : salle-salle, 2 : couloir-salle, 3 : salle-couloir</font>
+        self.isEnd = <font color="#ff00ff">0</font> <font color="#0000ff"># is this room the end of the level</font>
+        self.BigRoomId = <font color="#ff00ff">0</font> <font color="#0000ff"># default is 0 means corridor</font>
+        self.possibleEnd = <font color="#ff00ff">0</font> <font color="#0000ff"># TEMP FOR DEBUG ONLY</font>
+        <font color="#0000ff">#self.object = 0 # 0 is no object, else is the object</font>
+        <font color="#804040"><b>return</b></font>
+
+    <font color="#804040"><b>def</b></font> <font color="#008080">__str__</font>(self): <font color="#0000ff"># nice display in case of a print(object)</font>
+        t = []
+        <font color="#804040"><b>for</b></font> e <font color="#804040"><b>in</b></font> self.doors:
+            <font color="#804040"><b>if</b></font> e == <font color="#ff00ff">0</font>:
+                t.append(<font color="#ff00ff">0</font>)
+            <font color="#804040"><b>else</b></font>:
+                t.append(<font color="#ff00ff">1</font>)
+        <font color="#804040"><b>return</b></font> '<font color="#ff00ff">ROOM %s - %s</font>'%(<font color="#008080">str</font>(self.pos), <font color="#008080">str</font>(t))
+        <font color="#804040"><b>return</b></font> <font color="#008080">str</font>(t)
+
+    <font color="#804040"><b>def</b></font> <font color="#008080">link</font>(self, target, room, texture): <font color="#0000ff"># create a one way-link with another room</font>
+        <font color="#804040"><b>if</b></font>  target[<font color="#ff00ff">0</font>]-self.pos[<font color="#ff00ff">0</font>] == <font color="#ff00ff">1</font>:
+            self.doors[<font color="#ff00ff">0</font>] = room
+            self.texture[<font color="#ff00ff">0</font>] = texture
+        <font color="#804040"><b>elif</b></font> target[<font color="#ff00ff">1</font>]-self.pos[<font color="#ff00ff">1</font>] == <font color="#ff00ff">1</font>:
+            self.doors[<font color="#ff00ff">1</font>] = room
+            self.texture[<font color="#ff00ff">1</font>] = texture
+        <font color="#804040"><b>elif</b></font> target[<font color="#ff00ff">0</font>]-self.pos[<font color="#ff00ff">0</font>] == -<font color="#ff00ff">1</font>:
+            self.doors[<font color="#ff00ff">2</font>] = room
+            self.texture[<font color="#ff00ff">2</font>] = texture
+        <font color="#804040"><b>elif</b></font> target[<font color="#ff00ff">1</font>]-self.pos[<font color="#ff00ff">1</font>] == -<font color="#ff00ff">1</font>:
+            self.doors[<font color="#ff00ff">3</font>] = room
+            self.texture[<font color="#ff00ff">3</font>] = texture
+        <font color="#804040"><b>else</b></font>:
+            <font color="#804040"><b>print</b></font>(&quot;<font color="#ff00ff">room.openDoor : target - pos != 1 or -1</font>&quot;)
+
+    <font color="#804040"><b>def</b></font> <font color="#008080">nbDoors</font>(self):
+        out = <font color="#ff00ff">0</font>
+        <font color="#804040"><b>for</b></font> door <font color="#804040"><b>in</b></font> self.doors:
+            <font color="#804040"><b>if</b></font> door != <font color="#ff00ff">0</font>:
+                out += <font color="#ff00ff">1</font>
+        <font color="#804040"><b>return</b></font> out
+
+    <font color="#804040"><b>def</b></font> <font color="#008080">outTexture</font>(self): <font color="#0000ff"># not used</font>
+        <font color="#804040"><b>return</b></font> self.texture
+
+<font color="#804040"><b>class</b></font> <font color="#008080">CLaby</font>():
+    <font color="#804040"><b>def</b></font> <font color="#008080">__init__</font>(self):
+        self.laby = {}
+        self.end = <font color="#ff00ff">0</font> <font color="#0000ff"># pos of end</font>
+        <font color="#804040"><b>return</b></font>
+
+    <font color="#804040"><b>def</b></font> <font color="#008080">initRandom</font>(self, n=<font color="#008080">None</font>):
+        <font color="#804040"><b>if</b></font> n:
+            random.seed(n)
+        <font color="#804040"><b>else</b></font>:
+            random.seed()
+
+    <font color="#804040"><b>def</b></font> <font color="#008080">listNextRooms</font>(self, pos):
+        out = []
+        <font color="#804040"><b>for</b></font> room <font color="#804040"><b>in</b></font> self.laby[pos].doors:
+            <font color="#804040"><b>if</b></font> room != <font color="#ff00ff">0</font>:
+                out.append(room.pos)
+        <font color="#804040"><b>return</b></font> out
+
+    <font color="#804040"><b>def</b></font> <font color="#008080">connectedAndNot</font>(self):
+        frontiere = [(<font color="#ff00ff">0</font>,<font color="#ff00ff">0</font>)]
+        <font color="#804040"><b>if</b></font> self.listNextRooms((<font color="#ff00ff">0</font>,<font color="#ff00ff">0</font>)) != []:
+            connected = {(<font color="#ff00ff">0</font>,<font color="#ff00ff">0</font>) : self.laby[(<font color="#ff00ff">0</font>,<font color="#ff00ff">0</font>)]}
+        <font color="#804040"><b>else</b></font>:
+            startRoom = self.laby[(<font color="#ff00ff">0</font>,<font color="#ff00ff">0</font>)]
+            notConnected = {}
+            <font color="#804040"><b>for</b></font> room <font color="#804040"><b>in</b></font> self.laby:
+                <font color="#804040"><b>if</b></font> room != (<font color="#ff00ff">0</font>,<font color="#ff00ff">0</font>):
+                    notConnected[room] = self.laby[room]
+            <font color="#804040"><b>return</b></font> {(<font color="#ff00ff">0</font>,<font color="#ff00ff">0</font>) : startRoom}, notConnected
+        notConnected = {}
+        <font color="#804040"><b>while</b></font> frontiere != []:
+            pos = frontiere[<font color="#ff00ff">0</font>]
+            <font color="#804040"><b>for</b></font> posNextRoom <font color="#804040"><b>in</b></font> self.listNextRooms(pos):
+                <font color="#804040"><b>if</b></font> posNextRoom <font color="#804040"><b>not</b></font> <font color="#804040"><b>in</b></font> <font color="#008080">list</font>(connected.keys()):
+                    connected[posNextRoom] = self.laby[posNextRoom]
+                    frontiere.append(posNextRoom)
+            frontiere.pop(<font color="#ff00ff">0</font>)
+        <font color="#804040"><b>for</b></font> room <font color="#804040"><b>in</b></font> self.laby:
+            <font color="#804040"><b>if</b></font> room <font color="#804040"><b>not</b></font> <font color="#804040"><b>in</b></font> connected:
+                notConnected[room] = self.laby[room]
+        <font color="#804040"><b>if</b></font> <font color="#008080">len</font>(notConnected)+<font color="#008080">len</font>(connected) != <font color="#008080">len</font>(self.laby):
+            <font color="#804040"><b>print</b></font>(&quot;<font color="#ff00ff">error connectedAndNot</font>&quot;)
+            exit()
+        <font color="#804040"><b>return</b></font> connected, notConnected
+
+    <font color="#804040"><b>def</b></font> <font color="#008080">spread</font>(self, curr_pos):
+        depth = <font color="#ff00ff">0</font>
+        frontiere = [curr_pos]
+        aMap = {curr_pos : depth}
+        <font color="#804040"><b>while</b></font> frontiere != []:
+            pos = frontiere[<font color="#ff00ff">0</font>]
+            <font color="#804040"><b>for</b></font> posNextRoom <font color="#804040"><b>in</b></font> self.listNextRooms(pos):
+                <font color="#0000ff">#if posNextRoom not in list(aMap.keys()):</font>
+                <font color="#804040"><b>if</b></font> posNextRoom <font color="#804040"><b>not</b></font> <font color="#804040"><b>in</b></font> aMap:
+                    aMap[posNextRoom] = aMap[pos]+<font color="#ff00ff">1</font>
+                    frontiere.append(posNextRoom)
+            frontiere.pop(<font color="#ff00ff">0</font>)
+        <font color="#804040"><b>if</b></font> aMap.keys() == self.laby.keys():
+            <font color="#804040"><b>return</b></font> aMap
+        <font color="#804040"><b>else</b></font>:
+            <font color="#804040"><b>return</b></font> aMap
+
+    <font color="#804040"><b>def</b></font> <font color="#008080">dirToEnd</font>(self, pos):
+        endPos = self.end
+        aMap = self.spread(endPos)
+        direction = [] <font color="#0000ff"># distance to end for each direction (E, N, W, S)</font>
+        <font color="#804040"><b>for</b></font> room <font color="#804040"><b>in</b></font> self.laby[<font color="#008080">tuple</font>(pos)].doors:
+            <font color="#804040"><b>if</b></font> room:
+                direction.append(aMap[room.pos])
+            <font color="#804040"><b>else</b></font>:
+                direction.append(1e300)
+        <font color="#804040"><b>return</b></font> direction.index(<font color="#008080">min</font>(direction))
+
+    <font color="#804040"><b>def</b></font> <font color="#008080">gen</font>(self, n=<font color="#ff00ff">9</font>): <font color="#0000ff"># generating the labyrinth</font>
+        <font color="#804040"><b>for</b></font> rooms, (i,j) <font color="#804040"><b>in</b></font> self.stepGen(n): <font color="#0000ff"># calling stepGen as many times as necessary</font>
+            <font color="#804040"><b>pass</b></font>
+        <font color="#0000ff">## setting the end of the labyrinth</font>
+        self.aMap = self.spread((<font color="#ff00ff">0</font>,<font color="#ff00ff">0</font>)) <font color="#0000ff"># get the distance between any tile and the starting position</font>
+        possiblePos = []
+        maxDist = <font color="#008080">max</font>(self.aMap.values())
+        <font color="#804040"><b>for</b></font> dist <font color="#804040"><b>in</b></font> self.aMap.values():
+            key = getKey(dist, self.aMap)[<font color="#ff00ff">0</font>]
+            <font color="#804040"><b>if</b></font> dist &gt;= <font color="#ff00ff">0.6</font>*maxDist <font color="#804040"><b>and</b></font> self.laby[key].nbDoors() == <font color="#ff00ff">1</font>:
+                possiblePos.append(self.laby[key])
+                self.laby[key].possibleEnd = <font color="#ff00ff">1</font>
+        room = random.choice(possiblePos)
+        room.isEnd = <font color="#ff00ff">1</font>
+        self.end = room.pos
+        <font color="#804040"><b>return</b></font> self.laby
+
+    <font color="#804040"><b>def</b></font> <font color="#008080">twoWaysLink</font>(self, a, b, A, B):
+        abId = self.laby[a, b].BigRoomId
+        ABId = self.laby[A, B].BigRoomId
+        <font color="#804040"><b>if</b></font> <font color="#804040"><b>not</b></font>(abId-ABId):
+            texture1 = <font color="#ff00ff">1</font>
+            texture2 = <font color="#ff00ff">1</font>
+        <font color="#804040"><b>elif</b></font> abId == ABId == <font color="#ff00ff">0</font>:
+            texture1 = <font color="#ff00ff">0</font>
+            texture2 = <font color="#ff00ff">0</font>
+        <font color="#804040"><b>elif</b></font> abId !=  ABId != <font color="#ff00ff">0</font>:
+            texture1 = <font color="#ff00ff">0</font>
+            texture2 = <font color="#ff00ff">0</font>
+        <font color="#804040"><b>elif</b></font> abId == <font color="#ff00ff">0</font> <font color="#804040"><b>and</b></font> ABId !=<font color="#ff00ff">0</font>:
+            texture1 = <font color="#ff00ff">2</font>
+            texture2 = <font color="#ff00ff">3</font>
+        <font color="#804040"><b>elif</b></font> ABId == <font color="#ff00ff">0</font> <font color="#804040"><b>and</b></font> abId !=<font color="#ff00ff">0</font>:
+            texture1 = <font color="#ff00ff">3</font>
+            texture2 = <font color="#ff00ff">2</font>
+        <font color="#804040"><b>else</b></font>:
+            <font color="#804040"><b>print</b></font>(&quot;<font color="#ff00ff">twoWaysLink : ERROR</font>&quot;, abId, ABId)
+            exit()
+
+        self.laby[a, b].link((A, B), self.laby[A, B], texture1) <font color="#0000ff"># creating a 2 ways link</font>
+        self.laby[A, B].link((a, b), self.laby[a, b], texture2)
+        <font color="#804040"><b>return</b></font>
+
+    <font color="#804040"><b>def</b></font> <font color="#008080">createRoom</font>(self, sizeX, sizeY, posX, posY, roomId):
+        <font color="#0000ff"># check the area is clear of room</font>
+        <font color="#804040"><b>for</b></font> i <font color="#804040"><b>in</b></font> <font color="#008080">range</font>(posX-<font color="#ff00ff">1</font>, posX+sizeX+<font color="#ff00ff">1</font>, <font color="#ff00ff">1</font>):
+            <font color="#804040"><b>for</b></font> j <font color="#804040"><b>in</b></font> <font color="#008080">range</font>(posY-<font color="#ff00ff">1</font>, posY+sizeY+<font color="#ff00ff">1</font>, <font color="#ff00ff">1</font>):
+                <font color="#804040"><b>if</b></font> (i, j) <font color="#804040"><b>in</b></font> self.laby.keys():
+                    <font color="#804040"><b>return</b></font> <font color="#ff00ff">0</font>
+
+        <font color="#0000ff"># create the room on the cell grid</font>
+        <font color="#804040"><b>for</b></font> i <font color="#804040"><b>in</b></font> <font color="#008080">range</font>(posX, posX+sizeX, <font color="#ff00ff">1</font>):
+            <font color="#804040"><b>for</b></font> j <font color="#804040"><b>in</b></font> <font color="#008080">range</font>(posY, posY+sizeY, <font color="#ff00ff">1</font>):
+                self.laby[i, j] = CRoom((i, j))
+                self.laby[i, j].BigRoomId = roomId
+
+        <font color="#0000ff"># connect all the cells</font>
+        <font color="#804040"><b>for</b></font> i <font color="#804040"><b>in</b></font> <font color="#008080">range</font>(posX, posX+sizeX, <font color="#ff00ff">1</font>):
+            <font color="#804040"><b>for</b></font> j <font color="#804040"><b>in</b></font> <font color="#008080">range</font>(posY, posY+sizeY, <font color="#ff00ff">1</font>):
+                neighborsList = [(<font color="#ff00ff">1</font>, <font color="#ff00ff">0</font>), (<font color="#ff00ff">0</font>, <font color="#ff00ff">1</font>), (-<font color="#ff00ff">1</font>,<font color="#ff00ff">0</font>), (<font color="#ff00ff">0</font>,-<font color="#ff00ff">1</font>)]
+                <font color="#804040"><b>for</b></font> k <font color="#804040"><b>in</b></font> neighborsList:
+                    <font color="#804040"><b>if</b></font> (i+k[<font color="#ff00ff">0</font>], j+k[<font color="#ff00ff">1</font>]) <font color="#804040"><b>in</b></font> self.laby.keys() <font color="#804040"><b>and</b></font> (self.laby[i+k[<font color="#ff00ff">0</font>], j+k[<font color="#ff00ff">1</font>]].BigRoomId == self.laby[i, j].BigRoomId):
+                        self.twoWaysLink(i, j, i+k[<font color="#ff00ff">0</font>], j+k[<font color="#ff00ff">1</font>])
+        <font color="#804040"><b>return</b></font> <font color="#ff00ff">1</font>
+
+    <font color="#804040"><b>def</b></font> <font color="#008080">addPath</font>(self):
+        connected, notConnected = self.connectedAndNot()
+        startRoom = random.choice(<font color="#008080">list</font>(notConnected.values()))
+        endRoom = random.choice(<font color="#008080">list</font>(connected.values()))
+        sPos = startRoom.pos
+        ePos = endRoom.pos
+        distance = (ePos[<font color="#ff00ff">0</font>]-sPos[<font color="#ff00ff">0</font>], ePos[<font color="#ff00ff">1</font>]-sPos[<font color="#ff00ff">1</font>])
+        a, b = sPos[<font color="#ff00ff">0</font>], sPos[<font color="#ff00ff">1</font>]
+        step = <font color="#ff00ff">1</font> <font color="#804040"><b>if</b></font> distance[<font color="#ff00ff">0</font>] &gt; <font color="#ff00ff">0</font> <font color="#804040"><b>else</b></font> -<font color="#ff00ff">1</font>
+        <font color="#804040"><b>for</b></font> i <font color="#804040"><b>in</b></font> <font color="#008080">range</font>(step, distance[<font color="#ff00ff">0</font>]+step, step):
+            a, b = i+sPos[<font color="#ff00ff">0</font>], sPos[<font color="#ff00ff">1</font>]
+            <font color="#804040"><b>if</b></font> (a, b) <font color="#804040"><b>not</b></font> <font color="#804040"><b>in</b></font> self.laby:
+                self.laby[a, b] = CRoom((a, b))
+            self.twoWaysLink(a, b, a-step, b)
+
+        sPos = (a,b)
+        step = <font color="#ff00ff">1</font> <font color="#804040"><b>if</b></font> distance[<font color="#ff00ff">1</font>] &gt; <font color="#ff00ff">0</font> <font color="#804040"><b>else</b></font> -<font color="#ff00ff">1</font>
+        <font color="#804040"><b>for</b></font> j <font color="#804040"><b>in</b></font> <font color="#008080">range</font>(step, distance[<font color="#ff00ff">1</font>]+step, step):
+            a, b = sPos[<font color="#ff00ff">0</font>], j+sPos[<font color="#ff00ff">1</font>]
+            <font color="#804040"><b>if</b></font> (a, b) <font color="#804040"><b>not</b></font> <font color="#804040"><b>in</b></font> self.laby:
+                self.laby[a, b] = CRoom((a, b))
+            self.twoWaysLink(a, b, a, b-step)
+        <font color="#804040"><b>return</b></font>
+
+    <font color="#804040"><b>def</b></font> <font color="#008080">addPLC</font>(self):
+        nbDoors = <font color="#ff00ff">4</font>
+        <font color="#804040"><b>while</b></font> nbDoors &gt; <font color="#ff00ff">2</font>: <font color="#0000ff"># less than 2 doors already exist</font>
+            startRoom = random.choice(<font color="#008080">list</font>(self.laby.values()))
+            nbDoors = startRoom.nbDoors()
+        A, B = startRoom.pos[<font color="#ff00ff">0</font>], startRoom.pos[<font color="#ff00ff">1</font>]
+        count = <font color="#ff00ff">0</font>
+        count2 = <font color="#ff00ff">0</font>
+        <font color="#804040"><b>while</b></font> count &lt;=<font color="#ff00ff">2</font> <font color="#804040"><b>and</b></font> count2 &lt; <font color="#ff00ff">10</font>:
+            direction = random.randint(<font color="#ff00ff">0</font>,<font color="#ff00ff">3</font>)
+            da, db = dirToXY(direction)
+            a , b = A+da, B+db
+            <font color="#804040"><b>if</b></font> (a, b) <font color="#804040"><b>not</b></font> <font color="#804040"><b>in</b></font> self.laby:
+                self.laby[a, b] = CRoom((a, b))
+                self.twoWaysLink(a, b, A, B)
+                count += <font color="#ff00ff">1</font>
+                A, B = a, b
+            count2 += <font color="#ff00ff">1</font>
+
+    <font color="#804040"><b>def</b></font> <font color="#008080">stepGen</font>(self, n=<font color="#ff00ff">9</font>):
+        room = CRoom((<font color="#ff00ff">0</font>,<font color="#ff00ff">0</font>)) <font color="#0000ff"># pos = (x, y)</font>
+        self.laby = {(<font color="#ff00ff">0</font>,<font color="#ff00ff">0</font>) : room} <font color="#0000ff">#init starting room</font>
+        a, b = <font color="#ff00ff">0</font>, <font color="#ff00ff">0</font>
+        A, B = <font color="#ff00ff">0</font>, <font color="#ff00ff">0</font>
+        roomNumber = <font color="#ff00ff">1</font>
+        areaTooSmall = <font color="#ff00ff">0</font>
+        x, y = <font color="#008080">int</font>(n/<font color="#ff00ff">12</font>), <font color="#008080">int</font>(n/<font color="#ff00ff">12</font>)
+        <font color="#804040"><b>while</b></font> <font color="#008080">len</font>(self.laby) &lt;= n: <font color="#0000ff"># while there is less than n rooms or that 100 iteration wasn't enough</font>
+            <font color="#804040"><b>if</b></font> self.createRoom(random.choice([<font color="#ff00ff">2</font>,<font color="#ff00ff">2</font>,<font color="#ff00ff">3</font>,<font color="#ff00ff">3</font>,<font color="#ff00ff">3</font>,<font color="#ff00ff">4</font>,<font color="#ff00ff">5</font>]), random.choice([<font color="#ff00ff">2</font>,<font color="#ff00ff">2</font>,<font color="#ff00ff">3</font>,<font color="#ff00ff">3</font>,<font color="#ff00ff">3</font>,<font color="#ff00ff">4</font>,<font color="#ff00ff">5</font>]), random.randint(-x,x), random.randint(-y,y), roomNumber):
+                roomNumber += <font color="#ff00ff">1</font>
+                <font color="#804040"><b>yield</b></font> self.laby, (a,b) <font color="#0000ff"># yield a intermediary position to monitor the generation process</font>
+            <font color="#804040"><b>else</b></font>:
+                areaTooSmall += <font color="#ff00ff">1</font>
+            <font color="#804040"><b>if</b></font> areaTooSmall &gt; <font color="#ff00ff">2</font>*n:
+                areaTooSmall = <font color="#ff00ff">0</font>
+                x, y = x+<font color="#ff00ff">2</font>, y+<font color="#ff00ff">2</font>
+
+        <font color="#804040"><b>print</b></font>(roomNumber-<font color="#ff00ff">1</font>, &quot;<font color="#ff00ff">rooms created</font>&quot;)
+        connected, notConnected = self.connectedAndNot()
+        nbPath = <font color="#ff00ff">0</font>
+        <font color="#804040"><b>while</b></font> <font color="#008080">len</font>(<font color="#008080">list</font>(notConnected.keys())) != <font color="#ff00ff">0</font>:
+            self.addPath()
+            connected, notConnected = self.connectedAndNot()
+            nbPath += <font color="#ff00ff">1</font>
+            <font color="#804040"><b>yield</b></font> self.laby, (a,b)
+        <font color="#804040"><b>print</b></font>(nbPath, &quot;<font color="#ff00ff">paths created</font>&quot;)
+        <font color="#0000ff">#print(len(list(self.laby.keys())), 2*x*2*y*0.9)</font>
+        nbPLC = <font color="#ff00ff">0</font>
+        <font color="#804040"><b>while</b></font> <font color="#008080">len</font>(<font color="#008080">list</font>(self.laby.keys())) &lt;  <font color="#ff00ff">2</font>*x*<font color="#ff00ff">2</font>*y*<font color="#ff00ff">0.9</font>:
+            <font color="#0000ff">#print(&quot;adding pointless corridors&quot;)</font>
+            self.addPLC() <font color="#0000ff">#pointless corridor</font>
+            nbPLC += <font color="#ff00ff">1</font>
+            <font color="#804040"><b>yield</b></font> self.laby, (a,b)
+        <font color="#804040"><b>print</b></font>(nbPLC, &quot;<font color="#ff00ff">PLCs created</font>&quot;)
+
+    <font color="#804040"><b>def</b></font> <font color="#008080">out</font>(self):
+        <font color="#804040"><b>return</b></font> self.laby
+
+    <font color="#804040"><b>def</b></font> <font color="#008080">printLaby</font>(self):
+        keylist = <font color="#008080">list</font>(self.laby.keys())
+        x, y = [], []
+        <font color="#804040"><b>for</b></font> i <font color="#804040"><b>in</b></font> <font color="#008080">range</font>(<font color="#008080">len</font>(keylist)):
+            x.append(keylist[i][<font color="#ff00ff">0</font>])
+            y.append(keylist[i][<font color="#ff00ff">1</font>])
+        x = [<font color="#008080">min</font>(x), <font color="#008080">max</font>(x)]
+        y = [<font color="#008080">min</font>(y), <font color="#008080">max</font>(y)]
+
+        <font color="#804040"><b>for</b></font> j <font color="#804040"><b>in</b></font> <font color="#008080">range</font>(y[<font color="#ff00ff">1</font>], y[<font color="#ff00ff">0</font>]-<font color="#ff00ff">1</font>, -<font color="#ff00ff">1</font>):
+            <font color="#804040"><b>for</b></font> i <font color="#804040"><b>in</b></font> <font color="#008080">range</font>(x[<font color="#ff00ff">0</font>], x[<font color="#ff00ff">1</font>]+<font color="#ff00ff">1</font>):
+                <font color="#804040"><b>if</b></font> (i,j) <font color="#804040"><b>in</b></font> keylist:
+                    <font color="#804040"><b>if</b></font> self.laby[(i,j)].isEnd:
+                        <font color="#804040"><b>print</b></font>(&quot;<font color="#6a5acd">\xb7</font><font color="#ff00ff">XX</font><font color="#6a5acd">\xb7</font>&quot;, end='')
+                    <font color="#804040"><b>elif</b></font> (i,j) == (<font color="#ff00ff">0</font>,<font color="#ff00ff">0</font>):
+                        <font color="#804040"><b>print</b></font>(&quot;<font color="#6a5acd">\xb7</font><font color="#ff00ff">OO</font><font color="#6a5acd">\xb7</font>&quot;, end='')
+                    <font color="#804040"><b>else</b></font>:
+                        <font color="#0000ff">#print(&quot;\xb7[]\xb7&quot;, end='')</font>
+                        <font color="#804040"><b>print</b></font>(&quot;<font color="#6a5acd">\xb7</font><font color="#ff00ff">{0:2d}</font><font color="#6a5acd">\xb7</font>&quot;.format(self.aMap[i,j]), end='')
+                <font color="#804040"><b>else</b></font>:
+                    <font color="#804040"><b>print</b></font>(&quot;<font color="#6a5acd">\xb7\xb7\xb7\xb7</font>&quot;, end='')
+            <font color="#804040"><b>print</b></font>(&quot;&quot;)
+            <font color="#804040"><b>if</b></font> j != y[<font color="#ff00ff">0</font>]:
+                <font color="#804040"><b>for</b></font> i <font color="#804040"><b>in</b></font> <font color="#008080">range</font>(x[<font color="#ff00ff">0</font>], x[<font color="#ff00ff">1</font>]+<font color="#ff00ff">1</font>):
+                    <font color="#804040"><b>print</b></font>(&quot;<font color="#6a5acd">\xb7\xb7\xb7\xb7</font>&quot;, end='')
+                <font color="#804040"><b>print</b></font>(&quot;&quot;)
+        <font color="#804040"><b>print</b></font>(&quot;<font color="#6a5acd">\n</font>&quot;)
+        <font color="#804040"><b>return</b></font>
+
+
+<font color="#804040"><b>if</b></font> __name__ == '<font color="#ff00ff">__main__</font>':
+
+    laby = CLaby()
+    laby.initRandom()
+    laby.gen(<font color="#ff00ff">150</font>)
+    laby.printLaby()
+
+    <font color="#0000ff"># print(laby.laby)</font>
+    <font color="#0000ff"># for room in laby.laby.values():</font>
+    <font color="#0000ff">#     if room.isEnd == 1:</font>
+    <font color="#0000ff">#         endFound = 1</font>
+    <font color="#0000ff"># if endFound != 1:</font>
+    <font color="#0000ff">#     print(&quot;error multiple/no end(s)&quot;)</font>
+</pre>
+</body>
+</html>

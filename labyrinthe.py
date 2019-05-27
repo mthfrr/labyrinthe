@@ -12,7 +12,6 @@ class CRoom():
         self.isEnd = 0 # is this room the end of the level
         self.BigRoomId = 0 # default is 0 means corridor
         self.possibleEnd = 0 # TEMP FOR DEBUG ONLY
-        #self.object = 0 # 0 is no object, else is the object
         return
 
     def __str__(self): # nice display in case of a print(object)
@@ -26,30 +25,14 @@ class CRoom():
         return str(t)
 
     def link(self, target, room, texture): # create a one way-link with another room
-        if  target[0]-self.pos[0] == 1:
-            self.doors[0] = room
-            self.texture[0] = texture
-        elif target[1]-self.pos[1] == 1:
-            self.doors[1] = room
-            self.texture[1] = texture
-        elif target[0]-self.pos[0] == -1:
-            self.doors[2] = room
-            self.texture[2] = texture
-        elif target[1]-self.pos[1] == -1:
-            self.doors[3] = room
-            self.texture[3] = texture
-        else:
-            print("room.openDoor : target - pos != 1 or -1")
+        dx, dy = target[0]-self.pos[0], target[1]-self.pos[1]
+        angle = XYToDir(dx, dy)
+        self.doors[angle] = room
+        self.texture[angle] = texture
 
     def nbDoors(self):
-        out = 0
-        for door in self.doors:
-            if door != 0:
-                out += 1
-        return out
-
-    def outTexture(self): # not used
-        return self.texture
+        ' returns the number of doors from this room'
+        return sum(1 for x in self.doors if x)
 
 class CLaby():
     def __init__(self):
@@ -70,7 +53,7 @@ class CLaby():
                 out.append(room.pos)
         return out
 
-    def connectedAndNot(self): 
+    def connectedAndNot(self):
         frontiere = [(0,0)]
         if self.listNextRooms((0,0)) != []:
             connected = {(0,0) : self.laby[(0,0)]}
@@ -80,7 +63,7 @@ class CLaby():
             for room in self.laby:
                 if room != (0,0):
                     notConnected[room] = self.laby[room]
-            return {(0,0) : startRoom}, notConnected 
+            return {(0,0) : startRoom}, notConnected
         notConnected = {}
         while frontiere != []:
             pos = frontiere[0]
@@ -104,7 +87,7 @@ class CLaby():
         while frontiere != []:
             pos = frontiere[0]
             for posNextRoom in self.listNextRooms(pos):
-                if posNextRoom not in list(aMap.keys()):
+                if posNextRoom not in aMap:
                     aMap[posNextRoom] = aMap[pos]+1
                     frontiere.append(posNextRoom)
             frontiere.pop(0)
@@ -168,16 +151,19 @@ class CLaby():
         return
 
     def createRoom(self, sizeX, sizeY, posX, posY, roomId):
+        # check the area is clear of room
         for i in range(posX-1, posX+sizeX+1, 1):
             for j in range(posY-1, posY+sizeY+1, 1):
                 if (i, j) in self.laby.keys():
                     return 0
 
+        # create the room on the cell grid
         for i in range(posX, posX+sizeX, 1):
             for j in range(posY, posY+sizeY, 1):
                 self.laby[i, j] = CRoom((i, j))
                 self.laby[i, j].BigRoomId = roomId
 
+        # connect all the cells
         for i in range(posX, posX+sizeX, 1):
             for j in range(posY, posY+sizeY, 1):
                 neighborsList = [(1, 0), (0, 1), (-1,0), (0,-1)]
@@ -240,7 +226,7 @@ class CLaby():
         while len(self.laby) <= n: # while there is less than n rooms or that 100 iteration wasn't enough
             if self.createRoom(random.choice([2,2,3,3,3,4,5]), random.choice([2,2,3,3,3,4,5]), random.randint(-x,x), random.randint(-y,y), roomNumber):
                 roomNumber += 1
-                yield self.laby, (a,b) # yield a intermediary position to enable the following the generation process
+                yield self.laby, (a,b) # yield a intermediary position to monitor the generation process
             else:
                 areaTooSmall += 1
             if areaTooSmall > 2*n:
@@ -304,10 +290,3 @@ if __name__ == '__main__':
     laby.initRandom()
     laby.gen(150)
     laby.printLaby()
-
-    # print(laby.laby)
-    # for room in laby.laby.values():
-    #     if room.isEnd == 1:
-    #         endFound = 1
-    # if endFound != 1:
-    #     print("error multiple/no end(s)")

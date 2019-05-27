@@ -216,7 +216,8 @@ jeuEnCours = True
 while jeuEnCours:
     for event in pg.event.get() :
         if event.type==pg.QUIT:
-            pg.quit()
+            jeuEnCours = False
+            break
         elif event.type == pg.KEYDOWN:
             indice = False
             if event.key == 273: #haut
@@ -234,7 +235,8 @@ while jeuEnCours:
             elif event.key == 276: #gauche
                 dir+=1
             elif event.key == 27: #échap
-                pg.quit()
+                jeuEnCours = False
+                break
             elif event.key == 104: #h
                 indice = True
             else:
