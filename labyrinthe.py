@@ -54,6 +54,7 @@ class CLaby():
         return out
 
     def connectedAndNot(self):
+        # detect if the starting pos is connected to nothing
         frontiere = [(0,0)]
         if self.listNextRooms((0,0)) != []:
             connected = {(0,0) : self.laby[(0,0)]}
@@ -66,12 +67,11 @@ class CLaby():
             return {(0,0) : startRoom}, notConnected
         notConnected = {}
         while frontiere != []:
-            pos = frontiere[0]
+            pos = frontiere.pop(0)
             for posNextRoom in self.listNextRooms(pos):
                 if posNextRoom not in list(connected.keys()):
                     connected[posNextRoom] = self.laby[posNextRoom]
                     frontiere.append(posNextRoom)
-            frontiere.pop(0)
         for room in self.laby:
             if room not in connected:
                 notConnected[room] = self.laby[room]
