@@ -2,8 +2,8 @@ import pygame as pg
 import random as rd
 import sys
 import os
-#path = os.path.dirname(os.path.abspath(__file__))
 path = 'K:\profil\Bureau\labyrinthe-master2\labyrinthe-master'
+#path = os.path.dirname(os.path.abspath(__file__))
 os.chdir(path)
 
 import labyrinthe # as labyrinthe

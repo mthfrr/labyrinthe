@@ -1,11 +1,11 @@
-import pygame
-import sys
+# vim:set encoding=utf-8
+
 import os
 
 from PIL import Image, ImageDraw, ImageFont
 
 
-import labyrinthe  # as labyrinthe
+import labyrinthe
 import random
 
 
@@ -27,16 +27,6 @@ class CMapper():
             except FileNotFoundError:
                 img = None
         self.arrow = Image.open(path+'arrow.png')
-
-    def saveMissingPngs(self, path='./img_map/'):  ## à tester...
-        for k,img in self.tiles.items():
-            s = ''.join(k)
-            for _ in range(4):
-                s = s[1:]+s[0] # +90°
-                if not s in self.tiles:
-                    print ('Saving new image: %s'%(s))
-                    img = img.transpose(Image.ROTATE_270)
-                    img.save(path+s+'.png')
 
     def drawMap(self, roomDict, mapName = 'the_map.png', withCoord=False):
         keylist = list(roomDict.keys())
@@ -68,7 +58,7 @@ class CMapper():
                             s += 'x'  # wall
                         else:
                             s += 'o'  # door
-                    if r.BigRoomId == 0:
+                    if not r.BigRoomId:
                         s += '_d'
                     im = self.tiles[s]
                 except KeyError:
@@ -82,16 +72,6 @@ class CMapper():
                         drawObj.text((x+dx/2-10,y+dy/2-10), "%d %d"%(i,j), font=self.fnt2, fill=(255, 0, 0))
                     else:
                         drawObj.text((x+dx/2-10,y+dy/2-10), "%d %d"%(i,j), font=self.fnt, fill=(0, 0, 0))
-                if 0:
-                    if r:
-                        if (i,j) == (0,0):
-                            print ('o', end='')
-                        else:
-                            print ('x', end='')
-                    else:
-                        print (' ', end='')
-            if 0:
-                print ('')
 
         i,j = 0,0
         msg = 'GO'
@@ -123,12 +103,10 @@ class CMapper():
         self.image.save(mapName)
 
 
-
-
 if __name__ == '__main__':
     N = 100
-    #seed = random.randint(1,256)
     seed = 8
+    seed = random.randint(1,256)
 
     laby = labyrinthe.CLaby()
     mapper = CMapper()
@@ -140,13 +118,10 @@ if __name__ == '__main__':
     laby.initRandom(seed)
     for no, (rooms, (i,j)) in enumerate(laby.stepGen(N)):
         mapper.drawMap(rooms)
-        #mapper.writeInRoom( 'ICI', (i,j) )
         mapper.saveMap('mapsOut/the_map_%03d.png'%(no))
 
     laby.initRandom(seed)
     laby.gen(N)
-    #laby.printLaby()
-
 
     mapper.drawMap(laby.laby)
     mapper.writeInRoom( 'START', (0,0) )
@@ -167,6 +142,4 @@ if __name__ == '__main__':
     mapper.writeInRoom( 'END', laby.end )
 
     mapper.saveMap('the_map_with_hint.png')
-
-    # laby.dirToEnd(coord)
 

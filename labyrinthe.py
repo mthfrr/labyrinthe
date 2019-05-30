@@ -80,23 +80,19 @@ class CLaby():
             exit()
         return connected, notConnected
 
-    def spread(self, curr_pos):
+    def spread(self, curr_pos): # create a 'map' with distance of all cells to the given position 'curr_pos'
         depth = 0
         frontiere = [curr_pos]
         aMap = {curr_pos : depth}
         while frontiere != []:
-            pos = frontiere[0]
+            pos = frontiere.pop(0)
             for posNextRoom in self.listNextRooms(pos):
                 if posNextRoom not in aMap:
                     aMap[posNextRoom] = aMap[pos]+1
                     frontiere.append(posNextRoom)
-            frontiere.pop(0)
-        if aMap.keys() == self.laby.keys():
-            return aMap
-        else:
-            return aMap
+        return aMap
 
-    def dirToEnd(self, pos):
+    def dirToEnd(self, pos): # computes the absolute direction to the target room
         endPos = self.end
         aMap = self.spread(endPos)
         direction = [] # distance to end for each direction (E, N, W, S)
@@ -173,6 +169,7 @@ class CLaby():
         return 1
 
     def addPath(self):
+        # create the tunnels to connect the big rooms
         connected, notConnected = self.connectedAndNot()
         startRoom = random.choice(list(notConnected.values()))
         endRoom = random.choice(list(connected.values()))
@@ -197,6 +194,7 @@ class CLaby():
         return
 
     def addPLC(self):
+        # create the PointLess Corridors
         nbDoors = 4
         while nbDoors > 2: # less than 2 doors already exist
             startRoom = random.choice(list(self.laby.values()))
@@ -223,10 +221,16 @@ class CLaby():
         roomNumber = 1
         areaTooSmall = 0
         x, y = int(n/12), int(n/12)
-        while len(self.laby) <= n: # while there is less than n rooms or that 100 iteration wasn't enough
-            if self.createRoom(random.choice([2,2,3,3,3,4,5]), random.choice([2,2,3,3,3,4,5]), random.randint(-x,x), random.randint(-y,y), roomNumber):
+
+        # while there is less than n rooms or that 100 iteration wasn't enough
+        while len(self.laby) <= n:
+            if self.createRoom(random.choice([2,2,3,3,3,4,5]),
+                               random.choice([2,2,3,3,3,4,5]),
+                               random.randint(-x,x),
+                               random.randint(-y,y), roomNumber):
                 roomNumber += 1
-                yield self.laby, (a,b) # yield a intermediary position to monitor the generation process
+                # yield a intermediary position to monitor the generation process
+                yield self.laby, (a,b)
             else:
                 areaTooSmall += 1
             if areaTooSmall > 2*n:
@@ -240,14 +244,15 @@ class CLaby():
             self.addPath()
             connected, notConnected = self.connectedAndNot()
             nbPath += 1
+            # yield a intermediary position to monitor the generation process
             yield self.laby, (a,b)
         print(nbPath, "paths created")
-        #print(len(list(self.laby.keys())), 2*x*2*y*0.9)
+
         nbPLC = 0
         while len(list(self.laby.keys())) <  2*x*2*y*0.9:
-            #print("adding pointless corridors")
             self.addPLC() #pointless corridor
             nbPLC += 1
+            # yield a intermediary position to monitor the generation process
             yield self.laby, (a,b)
         print(nbPLC, "PLCs created")
 
@@ -271,7 +276,6 @@ class CLaby():
                     elif (i,j) == (0,0):
                         print("\xb7OO\xb7", end='')
                     else:
-                        #print("\xb7[]\xb7", end='')
                         print("\xb7{0:2d}\xb7".format(self.aMap[i,j]), end='')
                 else:
                     print("\xb7\xb7\xb7\xb7", end='')
