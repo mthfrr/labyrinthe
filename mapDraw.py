@@ -82,13 +82,13 @@ class CMapper():
         self.image = image
         self.drawObj = drawObj
 
-    def writeInRoom(self, msg, coord ):
+    def writeInRoom(self, msg, coord, fill=(0, 255, 0)):
         i,j = coord
         dx, dy = self.tiles['oooo'].size
         x,y = dx*(i-self.xMin), dy*(self.yMax-j-1)
 
         w, h = self.drawObj.textsize(msg, font=self.fnt2)
-        self.drawObj.text((x+dx/2-w/2,y+dy/2-h/2), msg, font=self.fnt2, fill=(0, 255, 0))
+        self.drawObj.text((x+dx/2-w/2,y+dy/2-h/2), msg, font=self.fnt2, fill=fill)
 
     def drawInRoom(self, direction, coord):
         i,j = coord
@@ -104,7 +104,7 @@ class CMapper():
 
 
 if __name__ == '__main__':
-    N = 100
+    N = 50
     seed = 8
     seed = random.randint(1,256)
 
@@ -114,6 +114,10 @@ if __name__ == '__main__':
     filelist = [ f for f in os.listdir("mapsOut") if f.endswith(".png") ]
     for f in filelist:
         os.remove(os.path.join("mapsOut", f))
+
+    filelist = [ f for f in os.listdir("mapsSpread") if f.endswith(".png") ]
+    for f in filelist:
+        os.remove(os.path.join("mapsSpread", f))
 
     laby.initRandom(seed)
     for no, (rooms, (i,j)) in enumerate(laby.stepGen(N)):
@@ -131,8 +135,20 @@ if __name__ == '__main__':
     aMap = laby.spread(laby.end)
     for k,v in aMap.items():
         mapper.writeInRoom( '%d'%(v), k )
-
     mapper.saveMap('the_map_with_distance.png')
+
+
+    no = 0
+    for frontiere, aMap in laby.spreadGen(laby.end):
+        mapper.drawMap(laby.laby)
+        for k,v in aMap.items():
+            if k in frontiere:
+                mapper.writeInRoom( '%d'%(v), k, (255, 0, 0))
+            else:
+                mapper.writeInRoom( '%d'%(v), k )
+        mapper.saveMap('mapsSpread/the_map_%03d.png'%(no))
+        no += 1
+
 
     mapper.drawMap(laby.laby)
     for aRoom in laby.laby.values():

@@ -123,6 +123,7 @@ images = set()
 
 def load():  #Charge la totalité des images au lancement du programme
     loaded = {}
+    pg.mixer.music.play()
     for step, obj in enumerate(['floor', 'pavement', 'wall', 'tunnel', 'chest']):
         for i in range (4):
             for j in range (-10, 10):

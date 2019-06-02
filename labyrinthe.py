@@ -31,7 +31,7 @@ class CRoom():
         self.texture[angle] = texture
 
     def nbDoors(self):
-        ' returns the number of doors from this room'
+        ' retourne le nombre de passages de cette case '
         return sum(1 for x in self.doors if x)
 
 class CLaby():
@@ -54,7 +54,7 @@ class CLaby():
         return out
 
     def connectedAndNot(self):
-        # detect if the starting pos is connected to nothing
+        # vérifie si la position de départ n'est connecté à rien
         frontiere = [(0,0)]
         if self.listNextRooms((0,0)) != []:
             connected = {(0,0) : self.laby[(0,0)]}
@@ -80,7 +80,22 @@ class CLaby():
             exit()
         return connected, notConnected
 
-    def spread(self, curr_pos): # create a 'map' with distance of all cells to the given position 'curr_pos'
+    def spreadGen(self, curr_pos):
+        # crée une 'map' avec dans chaque case la distance à la position donnée 'curr_pos'
+        depth = 0
+        frontiere = [curr_pos]
+        aMap = {curr_pos : depth}
+        while frontiere != []:
+            pos = frontiere.pop(0)
+            for posNextRoom in self.listNextRooms(pos):
+                if posNextRoom not in aMap:
+                    aMap[posNextRoom] = aMap[pos]+1
+                    frontiere.append(posNextRoom)
+                    yield frontiere, aMap
+        return aMap
+
+    def spread(self, curr_pos):
+        # crée une 'map' avec dans chaque case la distance à la position donnée 'curr_pos'
         depth = 0
         frontiere = [curr_pos]
         aMap = {curr_pos : depth}
@@ -92,10 +107,11 @@ class CLaby():
                     frontiere.append(posNextRoom)
         return aMap
 
-    def dirToEnd(self, pos): # computes the absolute direction to the target room
+
+    def dirToEnd(self, pos): # calcul la direction absolue vers le trésor depuis la position 'pos'
         endPos = self.end
         aMap = self.spread(endPos)
-        direction = [] # distance to end for each direction (E, N, W, S)
+        direction = [] # distance vers la trésor pour chaque direction (E, N, W, S)
         for room in self.laby[tuple(pos)].doors:
             if room:
                 direction.append(aMap[room.pos])
@@ -103,11 +119,11 @@ class CLaby():
                 direction.append(1e300)
         return direction.index(min(direction))
 
-    def gen(self, n=9): # generating the labyrinth
-        for rooms, (i,j) in self.stepGen(n): # calling stepGen as many times as necessary
+    def gen(self, n=9): # generation du labyrinthe
+        for rooms, (i,j) in self.stepGen(n): # appel de 'stepGen' autant de fois que nécessaire
             pass
-        ## setting the end of the labyrinth
-        self.aMap = self.spread((0,0)) # get the distance between any tile and the starting position
+        ## placement de trésor
+        self.aMap = self.spread((0,0)) # Calcul de la distance entre le trésor et toutes les autres case
         possiblePos = []
         maxDist = max(self.aMap.values())
         for dist in self.aMap.values():
@@ -142,24 +158,25 @@ class CLaby():
             print("twoWaysLink : ERROR", abId, ABId)
             exit()
 
-        self.laby[a, b].link((A, B), self.laby[A, B], texture1) # creating a 2 ways link
+        # création de la connection entre les 2 salles, dans les  deux sens
+        self.laby[a, b].link((A, B), self.laby[A, B], texture1)
         self.laby[A, B].link((a, b), self.laby[a, b], texture2)
         return
 
     def createRoom(self, sizeX, sizeY, posX, posY, roomId):
-        # check the area is clear of room
+        # Vérifie qu'il n'y a pas déjà une salle ici
         for i in range(posX-1, posX+sizeX+1, 1):
             for j in range(posY-1, posY+sizeY+1, 1):
                 if (i, j) in self.laby.keys():
                     return 0
 
-        # create the room on the cell grid
+        # création de la salle sur la grille
         for i in range(posX, posX+sizeX, 1):
             for j in range(posY, posY+sizeY, 1):
                 self.laby[i, j] = CRoom((i, j))
                 self.laby[i, j].BigRoomId = roomId
 
-        # connect all the cells
+        # connecte toute les cases à l'intérieur de la salle
         for i in range(posX, posX+sizeX, 1):
             for j in range(posY, posY+sizeY, 1):
                 neighborsList = [(1, 0), (0, 1), (-1,0), (0,-1)]
@@ -169,7 +186,7 @@ class CLaby():
         return 1
 
     def addPath(self):
-        # create the tunnels to connect the big rooms
+        # création des tunnels qui connectent les salles
         connected, notConnected = self.connectedAndNot()
         startRoom = random.choice(list(notConnected.values()))
         endRoom = random.choice(list(connected.values()))
@@ -194,9 +211,9 @@ class CLaby():
         return
 
     def addPLC(self):
-        # create the PointLess Corridors
+        # création des couloirs sans issue (pointless corridors)
         nbDoors = 4
-        while nbDoors > 2: # less than 2 doors already exist
+        while nbDoors > 2: # seulement s'il y a moins de 2 ouvertures
             startRoom = random.choice(list(self.laby.values()))
             nbDoors = startRoom.nbDoors()
         A, B = startRoom.pos[0], startRoom.pos[1]
@@ -215,21 +232,21 @@ class CLaby():
 
     def stepGen(self, n=9):
         room = CRoom((0,0)) # pos = (x, y)
-        self.laby = {(0,0) : room} #init starting room
+        self.laby = {(0,0) : room} #init case de départ
         a, b = 0, 0
         A, B = 0, 0
         roomNumber = 1
         areaTooSmall = 0
         x, y = int(n/12), int(n/12)
 
-        # while there is less than n rooms or that 100 iteration wasn't enough
+        # tant qu'il n'y y a moins de n salles, ou si 100 itérations n'ont pas suffit
         while len(self.laby) <= n:
             if self.createRoom(random.choice([2,2,3,3,3,4,5]),
                                random.choice([2,2,3,3,3,4,5]),
                                random.randint(-x,x),
                                random.randint(-y,y), roomNumber):
                 roomNumber += 1
-                # yield a intermediary position to monitor the generation process
+                # 'yield' l'état intermédiaire pour suivre la génération du labyrinthe
                 yield self.laby, (a,b)
             else:
                 areaTooSmall += 1
@@ -244,7 +261,7 @@ class CLaby():
             self.addPath()
             connected, notConnected = self.connectedAndNot()
             nbPath += 1
-            # yield a intermediary position to monitor the generation process
+            # 'yield' l'état intermédiaire pour suivre la génération du labyrinthe
             yield self.laby, (a,b)
         print(nbPath, "paths created")
 
@@ -252,7 +269,7 @@ class CLaby():
         while len(list(self.laby.keys())) <  2*x*2*y*0.9:
             self.addPLC() #pointless corridor
             nbPLC += 1
-            # yield a intermediary position to monitor the generation process
+            # 'yield' l'état intermédiaire pour suivre la génération du labyrinthe
             yield self.laby, (a,b)
         print(nbPLC, "PLCs created")
 
