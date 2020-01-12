@@ -7,9 +7,11 @@ Cette librairie est conçue pour faire des jeux en 2D mais nous avons décider d
 
 Nous avons donc généré les images pour une porte dans chaque position possible.
 Par exemple, voici une porte tournée à gauche :
+
 ![image of a door](/img/tiles/tunnel%2B3%2B1_1.png)
 
 Puis, ayant fait de même avec le sol et les murs et nous avons superposer les images de manière à donner une illusion de 3D.
+
 ![image of a tunnel](/tunnel.jpg)
 ![image of a room](/room.jpg)
 
